@@ -1,5 +1,5 @@
-import type { Search } from "@openfin/cloud-api";
-import type { Logger, OpenLibrarySearchResult, OpenLibrarySearchResultData } from "./shapes";
+import { Search } from "@openfin/cloud-api";
+import type { Logger, OpenLibrarySearchResult, OpenLibrarySearchResultData, SearchAgentConfigData } from "./shapes";
 
 let agentLogger: Logger | undefined;
 
@@ -10,6 +10,9 @@ let agentLogger: Logger | undefined;
  */
 export async function init(logger?: Logger): Promise<Search.SearchAgentRegistrationConfig> {
 	agentLogger = logger;
+	const { customData, description, id, title, url } =
+		await Search.getAgentConfiguration<SearchAgentConfigData>();
+	agentLogger?.info("init", { customData, description, id, title, url });
 	return {
 		onAction,
 		onSearch

@@ -91,3 +91,13 @@ export interface Logger {
 	 */
 	debug(message: unknown, ...optionalParams: unknown[]): void;
 }
+
+/**
+ * Interface for the search agent configuration data.
+ */
+export interface SearchAgentConfigData {
+	/**
+	 * An example setting.
+	 */
+	exampleSetting: string;
+}
