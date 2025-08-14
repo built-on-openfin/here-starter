@@ -24,7 +24,7 @@
     "typescript": "^5.6.3"
   },
   "dependencies": {
-    "@openfin/cloud-notification-core-api": "^0.0.1-alpha.f995a04",
+    "@openfin/cloud-notification-core-api": "^0.0.1-alpha.c2ab1c3",
     "chalk": "^5.4.1",
     "dotenv-defaults": "^5.0.2",
     "jsonwebtoken": "^9.0.2",
