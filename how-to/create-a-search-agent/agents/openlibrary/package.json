@@ -20,7 +20,7 @@
 	"contributors": [],
 	"license": "SEE LICENSE IN LICENSE.MD",
 	"dependencies": {
-		"@openfin/cloud-api": "0.0.1-alpha.e84a83c"
+		"@openfin/cloud-api": "0.0.1-alpha.fec3349"
 	},
 	"devDependencies": {
 		"eslint": "8.57.0",

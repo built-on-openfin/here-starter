@@ -1,5 +1,11 @@
-import { Search } from "@openfin/cloud-api";
-import type { Logger, OpenLibrarySearchResult, OpenLibrarySearchResultData, SearchAgentConfigData } from "./shapes";
+import { Agent } from "@openfin/cloud-api";
+import type { Search } from "@openfin/cloud-api";
+import type {
+	Logger,
+	OpenLibrarySearchResult,
+	OpenLibrarySearchResultData,
+	SearchAgentConfigData
+} from "./shapes";
 
 let agentLogger: Logger | undefined;
 
@@ -8,14 +14,15 @@ let agentLogger: Logger | undefined;
  * @param logger An optional logger for this agent to use.
  * @returns The search agent implementation.
  */
-export async function init(logger?: Logger): Promise<Search.SearchAgentRegistrationConfig> {
+export async function init(logger?: Logger): Promise<Agent.AgentRegistrationConfig> {
 	agentLogger = logger;
-	const { customData, description, id, title, url } =
-		await Search.getAgentConfiguration<SearchAgentConfigData>();
+	const { customData, description, id, title, url } = await Agent.getConfiguration<SearchAgentConfigData>();
 	agentLogger?.info("init", { customData, description, id, title, url });
 	return {
-		onAction,
-		onSearch
+		search: {
+			onAction,
+			onSearch
+		}
 	};
 }
 
@@ -50,13 +57,23 @@ async function onAction(
  * @param request The query from enterprise browser
  * @returns The results to display in the search results.
  */
-async function onSearch(request: Search.SearchListenerRequest): Promise<Search.SearchResponse> {
+async function onSearch(request: Agent.SearchListenerRequest): Promise<Search.SearchResponse> {
 	agentLogger?.info("onSearchListener", { request });
 	const { context, query, signal } = request;
-	const { pageNumber, pageSize } = context;
+	const { pageNumber, pageSize, filters } = context;
 	try {
 		let results: Search.SearchResult[] = [];
-		const url = `https://openlibrary.org/search.json?q=${query}&page=${pageNumber}&limit=${pageSize}`;
+
+		// Build the query with filters
+		let searchQuery = query;
+		if (filters.includes("public-ebook")) {
+			searchQuery += " +ebook_access:public";
+		}
+		if (filters.includes("21st-century")) {
+			searchQuery += " +first_publish_year:[2000 TO *]";
+		}
+
+		const url = `https://openlibrary.org/search.json?q=${encodeURIComponent(searchQuery)}&page=${pageNumber}&limit=${pageSize}`;
 		const response = await fetch(url, { signal });
 		if (!response.ok) {
 			throw new Error(`Request failed: ${response.status}`);

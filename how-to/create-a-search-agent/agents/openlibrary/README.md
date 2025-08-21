@@ -28,7 +28,8 @@ npm run build
 npm run start
 ```
 
-5. Once the local web server is running it should be able to serve the search agent you have configured following the instructions found here: <https://resources.here.io/docs/guide/admins/agents>. The url you will need for this sample is <http://localhost:8181/agent-search-openlibrary.html>
+5. Once the local web server is running it should be able to serve the search agent you have configured following the instructions found here: <https://resources.here.io/docs/guide/admins/agents>. Upload the agent's json file (`./public/agent-schema.json`) to
+   configure the agent in HERE EB.
 
 6. You will need to add an application that permits the OpenLibrary domain (<https://openlibrary.org/>) so that search results can be be launched into Enterprise Browser instead of the standard Desktop Browser. Instructions on how to add an application can be found here: <https://resources.here.io/docs/guide/admins/content>
 
