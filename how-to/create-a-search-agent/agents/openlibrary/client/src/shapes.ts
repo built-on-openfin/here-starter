@@ -32,6 +32,14 @@ export interface OpenLibraryDocument {
 	 * The title of the document.
 	 */
 	title: string;
+	/**
+	 * The ebook access of the document.
+	 */
+	ebook_access: string;
+	/**
+	 * The first publish year of the document.
+	 */
+	first_publish_year: number;
 }
 
 /**
@@ -96,8 +104,29 @@ export interface Logger {
  * Interface for the search agent configuration data.
  */
 export interface SearchAgentConfigData {
+	[key: string]: unknown;
 	/**
 	 * An example setting.
 	 */
 	exampleSetting: string;
+	/**
+	 * Custom data for the agent.
+	 */
+	customData?: unknown;
+	/**
+	 * Description of the agent.
+	 */
+	description?: string;
+	/**
+	 * ID of the agent.
+	 */
+	id?: string;
+	/**
+	 * Title of the agent.
+	 */
+	title?: string;
+	/**
+	 * URL of the agent.
+	 */
+	url?: string;
 }

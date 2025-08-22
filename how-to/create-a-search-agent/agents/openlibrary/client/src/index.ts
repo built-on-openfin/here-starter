@@ -1,4 +1,4 @@
-import { Search } from "@openfin/cloud-api";
+import { Agent } from "@openfin/cloud-api";
 import { init as getSearchAgent } from "./search";
 
 /**
@@ -22,8 +22,8 @@ async function init(): Promise<void> {
 			console.debug(message, optionalParams);
 		}
 	});
-	const searchAgent = await Search.register(openLibrarySearchAgent);
-	await searchAgent.isReady();
+	const searchAgent = await Agent.register(openLibrarySearchAgent);
+	await searchAgent.setIsReady(true);
 }
 
 window.addEventListener("load", async () => {
