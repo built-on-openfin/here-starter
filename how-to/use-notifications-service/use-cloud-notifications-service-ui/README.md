@@ -2,7 +2,6 @@
 
 Here Notifications allow your applications to display and interact with notifications in a common environment.
 
-
 The example is a simple view that shows launching, interacting and auditing notifications.
 
 ## Running the Sample
@@ -44,4 +43,3 @@ npm run build
 ```
 
 ---
-
