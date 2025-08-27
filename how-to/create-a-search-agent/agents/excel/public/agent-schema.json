@@ -1,0 +1,22 @@
+{
+	"$schema": "https://resources.here.io/schemas/agents/v1.0/custom-agent.json",
+	"type": "custom",
+	"url": "http://192.168.68.69:8181/agent-excel.html",
+	"title": "Excel",
+	"description": "An example HERE agent for desktop Excel",
+	"icon": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAeCAMAAAB61OwbAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAACUlBMVEUAAAAfoWcho2Yxwn8zxIEzxIAho2cgo2Ygj1AXiE0Yh04Vh0sVf0wYh04rs3QRfUMdm18enmIQej8PeD4VZjoSbTcPeDwPaTwNOCMTSSwXVjQXXDgZXDgYXDcaWDUYXDcZWzcZXDcYWzYho2YzxIExwX8homUhomYXe0sXe0oXekoYfkwcjVgfm2EXh04Xh00Xhk0WhkwWhUwWhUsVhEsVhEoVg0kUg0kUgkgTgUcTgEUOXDQVgEoXjlEosHEqsnIWhEsVg0oUg0gUgkcTgUYTgEYSgEUMWS8PbDoQfEEgoGISf0USf0QLWS9Dm22Rxapvs48ZhEuNwqaDvZ4Rf0QRfkMchk7h7+f6/fsykmB7uJj///94tpURfUMRfEILWC5eqYGlz7khiFHt9fHU6N0VgEYRfUIQekALVy293Mv7/fyp0bz9/v5EmmwQe0EQeD8LVi02k2GjzbYQeT8PeD4Pdz0MVCwQaDkReUAfn2Jcpn75/PvL4tUSe0EPdz4Pdj0PdTwNSikVUDAYXDcRekAfhk7n8uzX6d93tJJxr40OdDsOczoNSSmhzLRWoXgVfEPe7OXx9/Qng08PdDwOczsOcjoOcTkNSShLnHD+/v7E3tBkpoGozLgNcDgNbzgNSCdFl2pgpX8uiVcQdT1coHpeoHsTcz0NbjcNbTYMRycQe0AQeUAOcDkMbDUMazUMRiYNbzcNbTcNbDYMajQMaTMMRSUMaDMLYS8MNyAVUTAWZToVZjoNMh8NMh4NMB4QOyQVUzISRioTRysYWzYWVjMWVjRbvcitAAAAI3RSTlMAOev5/JeLjhBPVVW/0er+/Pv9qPIOERG2nZKOhfUdrLu6X+IvKQ8AAAABYktHRFt0vJU0AAAAB3RJTUUH6AcGFB0GrKhyBgAAAbNJREFUKM9jYIAARiZlBGBWgQEWVqg8AxuSvLKqCkIFTAE7DgUqVFSgBgXq6Ao4OLmAgJtHQ0NDU1NLS1tHF00Br56+gaGRsYmpmbmFhaWllbWNra2dPRzwMeiBpB1MHc2cLJwtXVzd3D08Pb2Q3MNgYGRsbArSDpb29vFFV2AElPbzD7CwDAwKdvUJCcVQALI8LDwi0iUqOsYnNDYuHl0B2PSE6MSk5JTU0DTP9Ax0BSC3u7hmZmXn5KZ55qXnF6ArAHrNxc2tMCu6KC4vvbiktKy8gl+gEg4EGUBu9/Gpiq6uqS0uqatvaGxqbm7xRAAGkNdCW9vaO6I7gdJd3T1ABRXICryBXkvrje7rnzBx0uQpU6dNR1cQAvTajJmzSkpnR8+ZOm3uvPnoCkLT8tIXLFxU37B4ydJl85avWImuwHPV6nyQ5VOmrgFKr123Hl2BUHFJfQPI8rkbNm5at3nLVnQFwnX1YGmgdqD0tu07djY379oNByIMDKJiYmLi4hJ79uwFgX37DzSjAFiSkzwIBYcOY1cgdQQCjqLJwxVIN+MARCuQwSEvC1MgJ6+ADSgqAQBYcCDH4GJKzwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNy0wNlQyMDoyOTowNSswMDowMF69blwAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDctMDZUMjA6Mjk6MDUrMDA6MDAv4NbgAAAAAElFTkSuQmCC",
+	"features": {
+		"search": {
+			"filters": [],
+			"supportsPaging": false
+		},
+		"interop": {
+			"fdc3Version": "2.0",
+			"defaultChannel": "green"
+		}
+	},
+  "supportedPlatforms": [
+    "windows"
+  ],
+  "configurationFields": []
+}

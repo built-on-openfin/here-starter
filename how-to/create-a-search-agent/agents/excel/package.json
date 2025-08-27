@@ -1,0 +1,36 @@
+{
+	"name": "here-starter-create-a-search-agent-excel",
+	"version": "8.0.0",
+	"description": "Here Starter -- Create a search agent - excel",
+	"main": "index.js",
+	"scripts": {
+		"kill": "node ../../scripts/kill.mjs",
+		"client": "node ../../scripts/launch.mjs http://localhost:8181/agent-search-excel.html",
+		"build-client": "webpack build --config ./client/webpack.config.js --mode=development",
+		"build": "npm run build-client",
+		"start": "npx --yes http-server ./public -p 8181 -c-1",
+		"setup": "npm install && npm run build",
+		"prettier": "prettier --config .prettierrc --write .",
+		"prettier-check": "prettier --config .prettierrc --check .",
+		"eslint": "eslint . --ext .js,.mjs,.ts",
+		"markdownlint": "markdownlint **/*.md",
+		"validate": "npm run prettier && npm run eslint"
+	},
+	"contributors": [],
+	"license": "SEE LICENSE IN LICENSE.MD",
+	"dependencies": {
+    "@finos/fdc3": "2.0.3",
+		"@openfin/cloud-api": "0.0.1-alpha.d66bf4d",
+		"@openfin/core": "^42.100.107",
+		"@openfin/excel": "^1.5.0"
+	},
+	"devDependencies": {
+		"eslint": "^9.23.0",
+		"prettier": "3.3.3",
+		"ts-loader": "^9.5.1",
+		"typescript": "^5.4.2",
+		"typescript-eslint": "^8.27.0",
+		"webpack": "^5.90.3",
+		"webpack-cli": "^5.1.4"
+	}
+}
