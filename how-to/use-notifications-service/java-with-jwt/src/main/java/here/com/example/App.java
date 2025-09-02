@@ -1,9 +1,9 @@
 package here.com.example;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Map;
 import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.github.cdimascio.dotenv.Dotenv;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,7 +21,8 @@ import com.openfin.NotificationUpdateOptions;
  * service.
  */
 public class App {
-  private static final Logger logger = LoggerFactory.getLogger(App.class);
+  private static volatile boolean shouldContinue = true;
+  private static CloudNotificationAPI api;
 
   private static final String[] HEADLINES = {
       "Local Startup Claims Breakthrough in Quantum Blockchain Fusion",
@@ -117,7 +118,7 @@ public class App {
         sourceId,
         new ConnectParameters.JwtAuthenticationParameters(() -> token, authenticationId));
 
-    CloudNotificationAPI api = new CloudNotificationAPI(settings);
+    api = new CloudNotificationAPI(settings);
 
     System.out.println("Connecting to notification service at " + serviceUrl + " with sourceId: " + sourceId
         + ", platformId: " + platformId + ", authenticationId: " + authenticationId);
@@ -135,10 +136,54 @@ public class App {
     api.onSessionExpired(App::onSessionExpired);
     api.onSessionExtended(App::onSessionExtended);
 
+    // Set up shutdown hook for graceful disconnection
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      System.out.println("\nShutting down gracefully...");
+      shouldContinue = false;
+      
+      // Suppress stderr during shutdown to avoid Jansi warnings
+      PrintStream originalErr = System.err;
+      try {
+        System.setErr(new PrintStream(new OutputStream() {
+          @Override
+          public void write(int b) {
+            // Suppress all stderr output during shutdown
+          }
+        }));
+        
+        if (api != null) {
+          try {
+            api.disconnect();
+            System.out.println("Disconnected from notification service");
+          } catch (Exception e) {
+            // Log to stdout instead of stderr during shutdown
+            System.out.println("Error during disconnect: " + e.getMessage());
+          }
+        }
+      } finally {
+        // Restore original stderr
+        System.setErr(originalErr);
+      }
+    }));
+
     // Parse the action argument and perform the corresponding operation
     String[] actionArray = action.split("=");
     if (actionArray[0].equals("newNotification")) {
       displayNotification(api);
+      
+      // Keep listening for events after creating notification
+      System.out.println("Notification created. Continuing to listen for events...");
+      System.out.println("Press Ctrl+C to exit and disconnect from the service.");
+      
+      // Keep the main thread alive to continue listening for events
+      try {
+        while (shouldContinue) {
+          Thread.sleep(1000); // Sleep for 1 second to avoid busy waiting
+        }
+      } catch (InterruptedException e) {
+        System.out.println("Main thread interrupted");
+      }
+      
     } else if (actionArray[0].equals("updateNotification")) {
       if (actionArray.length != 2) {
         System.out.println("Usage: updateNotification=<notificationId>");
@@ -149,6 +194,9 @@ public class App {
       System.out.println("Updating notification with id: " + notificationId);
 
       updateNotification(api, notificationId);
+      api.disconnect(); // Disconnect after update
+      System.out.println("Disconnected from notification service");
+      System.exit(0);
     } else if (actionArray[0].equals("deleteNotification")) {
       if (actionArray.length != 2) {
         System.out.println("Usage: deleteNotification=<notificationId>");
@@ -159,6 +207,9 @@ public class App {
       System.out.println("Deleting notification with id: " + notificationId);
 
       deleteNotification(api, notificationId);
+      api.disconnect(); // Disconnect after delete
+      System.out.println("Disconnected from notification service");
+      System.exit(0);
     } else {
       System.out.println("Unknown action: " + action);
       System.out.println(
@@ -166,9 +217,10 @@ public class App {
       System.exit(1);
     }
 
-    api.disconnect(); // Disconnect from the notification service
-    System.out.println("Disconnected from notification service");
-    System.exit(0);
+    // Only exit here if the action is not newNotification (which keeps running)
+    if (!actionArray[0].equals("newNotification")) {
+      System.exit(0);
+    }
   }
 
   private static void displayNotification(CloudNotificationAPI api) {
