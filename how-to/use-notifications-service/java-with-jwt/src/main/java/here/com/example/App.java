@@ -109,8 +109,21 @@ public class App {
     String platformId = args[1];
     String action = args.length > 2 ? args[2] : "newNotification";
 
+    String proxyHost = dotenv.get("PROXY_HOST");
+    String proxyPort = dotenv.get("PROXY_PORT");
+    String proxyUser = dotenv.get("PROXY_USER");
+    String proxyPassword = dotenv.get("PROXY_PASSWORD");
+
+    System.out.println("Proxy Info: " + proxyHost + " " + proxyPort + " " + proxyUser + " " + proxyPassword);
+
     // API setup and connection
-    CloudNotificationSettings settings = new CloudNotificationSettings(serviceUrl);
+    CloudNotificationSettings settings = new CloudNotificationSettings(
+      serviceUrl,
+      proxyHost, 
+      proxyPort, 
+      proxyUser, 
+      proxyPassword
+    );
 
     System.out.println("Connecting using JWT Authentication with " + authenticationId);
     ConnectParameters connectParams = new ConnectParameters(

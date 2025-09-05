@@ -13,6 +13,10 @@ A very simple Java application that raises notifications using the Here Cloud No
     - NOTIFICATION_SERVER_HOST: URL of the notification server. Please reach out to Here.io support for this information.
     - JWT_TOKEN: Generate a JWT and copy to the env file.
     - JWT_AUTHENTICATION_ID: Authentication ID for the JWT. Please reach out to Here.io support for this information.
+    - PROXY_HOST
+    - PROXY_PORT
+    - PROXY_USER
+    - PROXY_PASSWORD
 
 2. Run `mvn clean compile` (not sure if `clean` is necessary, but I have been including it)
 
