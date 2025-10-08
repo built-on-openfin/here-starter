@@ -109,24 +109,4 @@ export interface SearchAgentConfigData {
 	 * An example setting.
 	 */
 	exampleSetting: string;
-	/**
-	 * Custom data for the agent.
-	 */
-	customData?: unknown;
-	/**
-	 * Description of the agent.
-	 */
-	description?: string;
-	/**
-	 * ID of the agent.
-	 */
-	id?: string;
-	/**
-	 * Title of the agent.
-	 */
-	title?: string;
-	/**
-	 * URL of the agent.
-	 */
-	url?: string;
 }
