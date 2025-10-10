@@ -13,3 +13,4 @@ public-github
 chromedriver*
 package-lock.json
 package-lock.json
+.env
