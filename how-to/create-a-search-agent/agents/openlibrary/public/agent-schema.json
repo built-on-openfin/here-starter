@@ -11,11 +11,19 @@
 			"filters": [
 				{
 					"id": "public-ebook",
-					"title": "Public e-book"
+					"title": "Public e-book",
+					"icon": {
+						"light": "data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='5' y='7' font-family='Arial, sans-serif' font-size='8' font-weight='bold' text-anchor='middle' fill='%23FFFFFF'%3EE%3C/text%3E%3C/svg%3E",
+						"dark": "data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='5' y='7' font-family='Arial, sans-serif' font-size='8' font-weight='bold' text-anchor='middle' fill='%23140611'%3EE%3C/text%3E%3C/svg%3E"
+					}
 				},
 				{
 					"id": "21st-century",
-					"title": "21st Century"
+					"title": "21st Century",
+					"icon": {
+						"light": "data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='5' y='7' font-family='Arial, sans-serif' font-size='6' font-weight='bold' text-anchor='middle' fill='%23FFFFFF'%3E21%3C/text%3E%3C/svg%3E",
+						"dark": "data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='5' y='7' font-family='Arial, sans-serif' font-size='6' font-weight='bold' text-anchor='middle' fill='%23140611'%3E21%3C/text%3E%3C/svg%3E"
+					}
 				}
 			],
 			"supportsPaging": true
