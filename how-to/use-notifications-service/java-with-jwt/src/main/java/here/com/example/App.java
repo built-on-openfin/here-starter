@@ -210,10 +210,36 @@ public class App {
       api.disconnect(); // Disconnect after delete
       System.out.println("Disconnected from notification service");
       System.exit(0);
+    } else if (actionArray[0].equals("setReminder")) {
+      if (actionArray.length != 2) {
+        System.out.println("Usage: setReminder=<notificationId>");
+        System.exit(1);
+      }
+
+      String notificationId = actionArray[1];
+      System.out.println("Setting reminder for notification with id: " + notificationId);
+
+      setReminder(api, notificationId);
+      api.disconnect(); // Disconnect after setting reminder
+      System.out.println("Disconnected from notification service");
+      System.exit(0);
+    } else if (actionArray[0].equals("cancelReminder")) {
+      if (actionArray.length != 2) {
+        System.out.println("Usage: cancelReminder=<notificationId>");
+        System.exit(1);
+      }
+
+      String notificationId = actionArray[1];
+      System.out.println("Cancelling reminder for notification with id: " + notificationId);
+
+      cancelReminder(api, notificationId);
+      api.disconnect(); // Disconnect after cancelling reminder
+      System.out.println("Disconnected from notification service");
+      System.exit(0);
     } else {
       System.out.println("Unknown action: " + action);
       System.out.println(
-          "Available actions: newNotification, updateNotification=<notificationId>, deleteNotification=<notificationId>");
+          "Available actions: newNotification, updateNotification=<notificationId>, deleteNotification=<notificationId>, setReminder=<notificationId>, cancelReminder=<notificationId>");
       System.exit(1);
     }
 
@@ -282,6 +308,29 @@ public class App {
       System.out.println("Notification deleted with id: " + notificationId);
     } catch (Exception e) {
       System.err.println("Error deleting notification: " + e.getMessage());
+    }
+  }
+
+  private static void setReminder(CloudNotificationAPI api, String notificationId) {
+    try {
+      // Set reminder for 60 seconds from now (1 minute)
+      // Adjust the delay as needed for your use case
+      long delaySeconds = 60;
+      NotificationTargets targets = new NotificationTargets(new String[] { "all-users" }, new String[] {});
+      api.setReminder(notificationId, targets, delaySeconds);
+      System.out.println("Reminder set for notification with id: " + notificationId + " (in " + delaySeconds + " seconds)");
+    } catch (Exception e) {
+      System.err.println("Error setting reminder: " + e.getMessage());
+    }
+  }
+
+  private static void cancelReminder(CloudNotificationAPI api, String notificationId) {
+    try {
+      NotificationTargets targets = new NotificationTargets(new String[] { "all-users" }, new String[] {});
+      api.cancelReminder(notificationId, targets);
+      System.out.println("Reminder cancelled for notification with id: " + notificationId);
+    } catch (Exception e) {
+      System.err.println("Error cancelling reminder: " + e.getMessage());
     }
   }
 

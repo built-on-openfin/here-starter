@@ -22,6 +22,8 @@ A very simple Java application that raises notifications using the Here Cloud No
 mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="server {platform-name-uuid} newNotification"
 mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="server {platform-name-uuid} updateNotification={notification id}"
 mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="server {platform-name-uuid} deleteNotification={notification id}"
+mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="server {platform-name-uuid} setReminder={notification id}"
+mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="server {platform-name-uuid} cancelReminder={notification id}"
 
 ```
 
@@ -31,3 +33,10 @@ Some refining and refactoring is still needed, but raising and deleting notifica
 working. When updating a notification there is no error message, but during testing the 
 notification did not change.  This could be an issue with the parameters or something going on 
 in the api; needs more testing/debugging.
+
+### Reminder Functionality
+
+The `setReminder` and `cancelReminder` actions are available in the code, but may not be supported
+on all server environments. If you encounter an error like "Cannot POST /notifications/api/publications/events",
+this indicates that the reminder endpoint is not available on your server. Please contact Here.io
+support to verify if reminder functionality is enabled for your environment.
