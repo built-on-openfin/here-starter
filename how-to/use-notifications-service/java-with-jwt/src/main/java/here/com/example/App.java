@@ -101,27 +101,77 @@ public class App {
     // retrieve environment variables using dotenv
     Dotenv dotenv = Dotenv.load();
     String serviceUrl = dotenv.get("NOTIFICATION_SERVER_HOST");
-    String authenticationId = dotenv.get("JWT_AUTHENTICATION_ID");
-    String token = dotenv.get("JWT_TOKEN");
+    String sourceId = dotenv.get("SOURCE_ID");
+    String platformId = dotenv.get("PLATFORM_ID");
+    String authType = dotenv.get("AUTH_TYPE");
+    if (authType == null || authType.isEmpty()) {
+      authType = "jwt"; // default to jwt auth
+    }
 
-    // retrieve command line arguments
-    String sourceId = args[0];
-    String platformId = args[1];
-    String action = args.length > 2 ? args[2] : "newNotification";
+    // retrieve command line arguments (only action remains)
+    String action = args.length > 0 ? args[0] : "newNotification"; // default action
+
+    // Validate required environment variables
+    if (serviceUrl == null) {
+      System.err.println("NOTIFICATION_SERVER_HOST environment variable is required");
+      System.exit(1);
+    }
+    if (sourceId == null) {
+      System.err.println("SOURCE_ID environment variable is required");
+      System.exit(1);
+    }
+    if (platformId == null) {
+      System.err.println("PLATFORM_ID environment variable is required");
+      System.exit(1);
+    }
 
     // API setup and connection
     CloudNotificationSettings settings = new CloudNotificationSettings(serviceUrl);
 
-    System.out.println("Connecting using JWT Authentication with " + authenticationId);
-    ConnectParameters connectParams = new ConnectParameters(
-        platformId,
-        sourceId,
-        new ConnectParameters.JwtAuthenticationParameters(() -> token, authenticationId));
+    ConnectParameters connectParams;
+    if ("jwt".equalsIgnoreCase(authType)) {
+      // JWT authentication
+      String authenticationId = dotenv.get("JWT_AUTHENTICATION_ID");
+      String token = dotenv.get("JWT_TOKEN");
+      
+      if (authenticationId == null || token == null) {
+        System.err.println("JWT authentication requires JWT_AUTHENTICATION_ID and JWT_TOKEN environment variables");
+        System.exit(1);
+      }
+      
+      System.out.println("Connecting using JWT Authentication with " + authenticationId);
+      connectParams = new ConnectParameters(
+          platformId,
+          sourceId,
+          new ConnectParameters.JwtAuthenticationParameters(() -> token, authenticationId));
+      
+      System.out.println("Connecting to notification service at " + serviceUrl + " with sourceId: " + sourceId
+          + ", platformId: " + platformId + ", authenticationId: " + authenticationId);
+    } else if ("basic".equalsIgnoreCase(authType)) {
+      // Basic authentication
+      String username = dotenv.get("AUTHENTICATION_BASIC_USERNAME");
+      String password = dotenv.get("AUTHENTICATION_BASIC_PASSWORD");
+      
+      if (username == null || password == null) {
+        System.err.println("Basic authentication requires AUTHENTICATION_BASIC_USERNAME and AUTHENTICATION_BASIC_PASSWORD environment variables");
+        System.exit(1);
+      }
+      
+      System.out.println("Connecting using Basic Authentication with username: " + username);
+      connectParams = new ConnectParameters(
+          platformId,
+          sourceId,
+          new ConnectParameters.BasicAuthenticationParameters(username, password));
+      
+      System.out.println("Connecting to notification service at " + serviceUrl + " with sourceId: " + sourceId
+          + ", platformId: " + platformId);
+    } else {
+      System.err.println("Invalid AUTH_TYPE: " + authType + ". Must be 'jwt' or 'basic'");
+      System.exit(1);
+      connectParams = null; // unreachable, but satisfies compiler
+    }
 
     api = new CloudNotificationAPI(settings);
-
-    System.out.println("Connecting to notification service at " + serviceUrl + " with sourceId: " + sourceId
-        + ", platformId: " + platformId + ", authenticationId: " + authenticationId);
 
     try {
       api.connect(connectParams);
@@ -210,6 +260,20 @@ public class App {
       api.disconnect(); // Disconnect after delete
       System.out.println("Disconnected from notification service");
       System.exit(0);
+    } else if (actionArray[0].equals("bulkDeleteNotification")) {
+      if (actionArray.length != 2) {
+        System.out.println("Usage: bulkDeleteNotification=<notificationId1,notificationId2,...>");
+        System.exit(1);
+      }
+
+      String notificationIdsStr = actionArray[1];
+      String[] notificationIds = notificationIdsStr.split(",");
+      System.out.println("Deleting " + notificationIds.length + " notification(s)");
+
+      bulkDeleteNotification(api, notificationIds);
+      api.disconnect(); // Disconnect after bulk delete
+      System.out.println("Disconnected from notification service");
+      System.exit(0);
     } else if (actionArray[0].equals("setReminder")) {
       if (actionArray.length != 2) {
         System.out.println("Usage: setReminder=<notificationId>");
@@ -239,7 +303,7 @@ public class App {
     } else {
       System.out.println("Unknown action: " + action);
       System.out.println(
-          "Available actions: newNotification, updateNotification=<notificationId>, deleteNotification=<notificationId>, setReminder=<notificationId>, cancelReminder=<notificationId>");
+          "Available actions: newNotification, updateNotification=<notificationId>, deleteNotification=<notificationId>, bulkDeleteNotification=<notificationId1,notificationId2,...>, setReminder=<notificationId>, cancelReminder=<notificationId>");
       System.exit(1);
     }
 
@@ -311,14 +375,34 @@ public class App {
     }
   }
 
+  private static void bulkDeleteNotification(CloudNotificationAPI api, String[] notificationIds) {
+    int successCount = 0;
+    int failureCount = 0;
+    
+    for (String notificationId : notificationIds) {
+      try {
+        api.deleteNotification(notificationId.trim());
+        System.out.println("Notification deleted with id: " + notificationId.trim());
+        successCount++;
+      } catch (Exception e) {
+        System.err.println("Error deleting notification " + notificationId.trim() + ": " + e.getMessage());
+        failureCount++;
+      }
+    }
+    
+    System.out.println("Bulk delete completed: " + successCount + " succeeded, " + failureCount + " failed");
+  }
+
   private static void setReminder(CloudNotificationAPI api, String notificationId) {
     try {
       // Set reminder for 60 seconds from now (1 minute)
       // Adjust the delay as needed for your use case
       long delaySeconds = 60;
+      long reminderEpochMs = System.currentTimeMillis() + (delaySeconds * 1000);
       NotificationTargets targets = new NotificationTargets(new String[] { "all-users" }, new String[] {});
-      api.setReminder(notificationId, targets, delaySeconds);
-      System.out.println("Reminder set for notification with id: " + notificationId + " (in " + delaySeconds + " seconds)");
+      
+      api.setReminder(notificationId, targets, reminderEpochMs);
+      System.out.println("Reminder set successfully for notification with id: " + notificationId);
     } catch (Exception e) {
       System.err.println("Error setting reminder: " + e.getMessage());
     }
