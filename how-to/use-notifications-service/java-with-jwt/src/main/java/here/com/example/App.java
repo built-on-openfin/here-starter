@@ -2,6 +2,7 @@ package here.com.example;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.Date;
 import java.util.Map;
 import java.util.Random;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -398,10 +399,55 @@ public class App {
       // Set reminder for 60 seconds from now (1 minute)
       // Adjust the delay as needed for your use case
       long delaySeconds = 60;
-      long reminderEpochMs = System.currentTimeMillis() + (delaySeconds * 1000);
       NotificationTargets targets = new NotificationTargets(new String[] { "all-users" }, new String[] {});
       
-      api.setReminder(notificationId, targets, reminderEpochMs);
+      Date reminderDate = new Date(System.currentTimeMillis() + (delaySeconds * 1000));
+
+      ObjectMapper objectMapper = new ObjectMapper();
+      String reminderJson = "{\n" +
+          "  \"template\": \"custom\",\n" +
+          "  \"title\": \"Reminder\",\n" +
+          "  \"toast\": \"transient\",\n" +
+          "  \"templateData\": {\n" +
+          "    \"textData\": \"This is a reminder notification\"\n" +
+          "  },\n" +
+          "  \"templateOptions\": {\n" +
+          "    \"body\": {\n" +
+          "      \"fallbackText\": \"Reminder notification\",\n" +
+          "      \"compositions\": [\n" +
+          "        {\n" +
+          "          \"minTemplateAPIVersion\": \"1\",\n" +
+          "          \"layout\": {\n" +
+          "            \"type\": \"container\",\n" +
+          "            \"children\": [\n" +
+          "              {\n" +
+          "                \"optional\": true,\n" +
+          "                \"type\": \"text\",\n" +
+          "                \"dataKey\": \"textData\"\n" +
+          "              }\n" +
+          "            ]\n" +
+          "          }\n" +
+          "        }\n" +
+          "      ]\n" +
+          "    },\n" +
+          "    \"indicator\": {\n" +
+          "      \"color\": \"purple\"\n" +
+          "    }\n" +
+          "  },\n" +
+          "  \"buttons\": [\n" +
+          "    {\n" +
+          "      \"title\": \"Dismiss\",\n" +
+          "      \"cta\": true,\n" +
+          "      \"type\": \"button\",\n" +
+          "      \"onClick\": {\n" +
+          "        \"button1Data\": 1\n" +
+          "      }\n" +
+          "    }\n" +
+          "  ]\n" +
+          "}";
+      Object reminderPayload = objectMapper.readValue(reminderJson, Object.class);
+
+      api.setReminder(notificationId, targets, reminderDate, reminderPayload);
       System.out.println("Reminder set successfully for notification with id: " + notificationId);
     } catch (Exception e) {
       System.err.println("Error setting reminder: " + e.getMessage());
