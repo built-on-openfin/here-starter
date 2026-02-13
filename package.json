@@ -1,6 +1,6 @@
 {
   "name": "here-starter",
-  "version": "5.1.0",
+  "version": "10.0.0",
   "description": "Here Starter",
   "scripts": {
     "build": "node ./scripts/workspaces.mjs build",
