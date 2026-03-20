@@ -1,6 +1,6 @@
 {
 	"name": "here-starter-create-a-search-agent-openlibrary",
-	"version": "5.1.0",
+	"version": "11.1.0",
 	"description": "Here Starter -- Create a search agent - OpenLibrary",
 	"main": "index.js",
 	"scripts": {
@@ -20,7 +20,7 @@
 	"contributors": [],
 	"license": "SEE LICENSE IN LICENSE.MD",
 	"dependencies": {
-		"@openfin/cloud-api": "10.0.0"
+		"@openfin/cloud-api": "11.1.0"
 	},
 	"devDependencies": {
 		"eslint": "8.57.0",

@@ -1,11 +1,11 @@
 {
-	"name": "here-starter-create-a-search-agent-bloomberg-tcapi",
+	"name": "here-starter-create-a-search-agent-interop",
 	"version": "11.1.0",
-	"description": "Here Starter -- Create a search agent - Bloomberg TCAPI",
+	"description": "Here Starter -- Create a search agent - Interop",
 	"main": "index.js",
 	"scripts": {
 		"kill": "node ../../scripts/kill.mjs",
-		"client": "node ../../scripts/launch.mjs http://localhost:8181/agent-search-bloomberg-tcapi.html",
+		"client": "node ../../scripts/launch.mjs http://localhost:8181/agent-search-openlibrary.html",
 		"build-client": "webpack build --config ./client/webpack.config.js --mode=development",
 		"build": "npm run build-client",
 		"start": "npx --yes http-server ./public -p 8181 -c-1",
@@ -16,13 +16,12 @@
 		"markdownlint": "markdownlint **/*.md",
 		"validate": "npm run prettier && npm run eslint && npm run markdownlint"
 	},
-	"author": "ameet.jayawant@here.io",
+	"author": "john.mandia@here.io",
 	"contributors": [],
 	"license": "SEE LICENSE IN LICENSE.MD",
 	"dependencies": {
-		"@openfin/bloomberg": "^2.1.0",
-		"@openfin/cloud-api": "11.1.0",
-		"@openfin/core": "^41.102.4"
+		"@finos/fdc3": "2.0.3",
+		"@openfin/cloud-api": "11.1.0"
 	},
 	"devDependencies": {
 		"eslint": "8.57.0",
