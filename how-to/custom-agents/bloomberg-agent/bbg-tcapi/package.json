@@ -1,6 +1,6 @@
 {
 	"name": "here-starter-create-a-search-agent-bloomberg-tcapi",
-	"version": "10.0.0",
+	"version": "11.1.0",
 	"description": "Here Starter -- Create a search agent - Bloomberg TCAPI",
 	"main": "index.js",
 	"scripts": {
@@ -13,7 +13,7 @@
 		"prettier": "prettier --config .prettierrc --write .",
 		"prettier-check": "prettier --config .prettierrc --check .",
 		"eslint": "eslint . --ext .js,.mjs,.ts",
-		"markdownlint": "markdownlint **/*.md",
+		"markdownlint": "markdownlint **/*.md --ignore node_modules",
 		"validate": "npm run prettier && npm run eslint && npm run markdownlint"
 	},
 	"author": "ameet.jayawant@here.io",
@@ -21,7 +21,7 @@
 	"license": "SEE LICENSE IN LICENSE.MD",
 	"dependencies": {
 		"@openfin/bloomberg": "^2.1.0",
-		"@openfin/cloud-api": "10.0.0",
+		"@openfin/cloud-api": "11.1.0",
 		"@openfin/core": "^41.102.4"
 	},
 	"devDependencies": {

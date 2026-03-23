@@ -28,6 +28,6 @@ npm run start
 
 5. Please ensure that the Bloomberg Terminal is running and that a user is logged into it.
 
-6. Once the local web server is running it will be accessible from within EB using the url "http://localhost:8080/index.html". Please add this application in EB. Instructions on how to add an application can be found here: <https://resources.here.io/docs/guide/admins/content>.
+6. Once the local web server is running it will be accessible from within EB using the url <http://localhost:8080/index.html>. Please add this application in EB. Instructions on how to add an application can be found here: <https://resources.here.io/docs/guide/admins/content>.
 
 7. You can now use this sample app to send the Bloomberg TCAPI agent data that it will be able to display on the Bloomberg Terminal.
