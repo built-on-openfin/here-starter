@@ -1,12 +1,13 @@
 import { Agent } from "@openfin/cloud-api";
 import type { Search } from "@openfin/cloud-api";
 import type { Logger, SearchAgentConfigData, UserData, UserSearchResultData } from "./shapes";
+import { isStringValue } from "./util";
 
 let agentLogger: Logger | undefined;
 let userData: UserData[] = [];
-let targetIntent: string | undefined;
-let intentName: string | undefined;
-const actions: Search.SearchAction[] = [];
+let primaryIntent: { name: string; displayName: string } | undefined;
+let secondaryIntent: { name: string; displayName: string } | undefined;
+let broadcastContext: boolean = false;
 
 /**
  * Returns a search agent implementation for OpenLibrary.
@@ -15,20 +16,46 @@ const actions: Search.SearchAction[] = [];
  */
 export async function init(logger?: Logger): Promise<Agent.AgentRegistrationConfig> {
 	agentLogger = logger;
-	const { intent, dataSource } = await Agent.getConfiguration<SearchAgentConfigData>();
-	if (window.fdc3 && intent) {
+	const { intent, intent2, broadcast, dataSource } = await Agent.getConfiguration<SearchAgentConfigData>();
+	if (window.fdc3) {
 		try {
-			const appIntent = await window.fdc3.findIntent(intent);
-			if (appIntent.apps.length === 0) {
-				agentLogger?.warn(`No apps found for intent: ${intent}`);
+			if (isStringValue(intent)) {
+				const appIntent = await window.fdc3.findIntent(intent);
+				if (appIntent.apps.length === 0) {
+					agentLogger?.warn(`No apps found for primary intent: ${intent}`);
+				} else {
+					agentLogger?.info(`Found ${appIntent.apps.length} app(s) for primary intent: ${intent}`, {
+						apps: appIntent.apps
+					});
+					primaryIntent = {
+						name: appIntent.intent.name,
+						displayName: appIntent.intent.displayName || appIntent.intent.name
+					};
+				}
 			} else {
-				agentLogger?.info(`Found ${appIntent.apps.length} app(s) for intent: ${intent}`, {
-					apps: appIntent.apps
-				});
-				targetIntent = appIntent.intent.name;
-				intentName = appIntent.intent.displayName || appIntent.intent.name;
-				actions.push({ name: "intent", description: `Raise ${intentName} Intent` });
-				actions.push({ name: "broadcast", description: "Broadcast" });
+				agentLogger?.error("No primary intent configured");
+			}
+			if (isStringValue(intent2)) {
+				const appIntent = await window.fdc3.findIntent(intent2);
+				if (appIntent.apps.length === 0) {
+					agentLogger?.warn(`No apps found for secondary intent: ${intent2}`);
+				} else {
+					agentLogger?.info(`Found ${appIntent.apps.length} app(s) for secondary intent: ${intent2}`, {
+						apps: appIntent.apps
+					});
+					secondaryIntent = {
+						name: appIntent.intent.name,
+						displayName: appIntent.intent.displayName || appIntent.intent.name
+					};
+				}
+			} else {
+				agentLogger?.info("No secondary intent configured");
+			}
+			if (isStringValue(broadcast) && broadcast.toLowerCase() === "yes") {
+				broadcastContext = true;
+				agentLogger?.info("Broadcast action enabled");
+			} else {
+				agentLogger?.info("Broadcast action not enabled", broadcast);
 			}
 		} catch (err) {
 			agentLogger?.error(
@@ -36,8 +63,7 @@ export async function init(logger?: Logger): Promise<Agent.AgentRegistrationConf
 			);
 		}
 	}
-	targetIntent = intent;
-	agentLogger?.info("Agent example setting (init)", { intent, dataSource });
+	agentLogger?.info("Agent Interop example setting (init)", { intent, intent2, broadcast, dataSource });
 
 	// Fetch user data from the configured data source
 	if (dataSource) {
@@ -51,6 +77,8 @@ export async function init(logger?: Logger): Promise<Agent.AgentRegistrationConf
 		} catch (err) {
 			agentLogger?.error(`Error fetching user data: ${(err as Error).message}`);
 		}
+	} else {
+		agentLogger?.error("No data source configured");
 	}
 
 	return {
@@ -87,10 +115,27 @@ async function onAction(
 	agentLogger?.info(`onAction: ${actionName} ${title} ${key}`);
 	switch (actionName) {
 		case "intent": {
-			agentLogger?.info(`Raising intent: ${intentName} for user: ${resultData.id} - ${resultData.email}`);
-			if (targetIntent) {
-				window.fdc3.raiseIntent(targetIntent, context).catch((err) => {
-					agentLogger?.error(`Error raising intent: ${err instanceof Error ? err.message : String(err)}`);
+			agentLogger?.info(
+				`Raising primary intent: ${primaryIntent?.name} for user: ${resultData.id} - ${resultData.email}`
+			);
+			if (primaryIntent) {
+				window.fdc3.raiseIntent(primaryIntent.name, context).catch((err) => {
+					agentLogger?.error(
+						`Error raising primary intent: ${err instanceof Error ? err.message : String(err)}`
+					);
+				});
+			}
+			break;
+		}
+		case "intent2": {
+			agentLogger?.info(
+				`Raising secondary intent: ${secondaryIntent?.name} for user: ${resultData.id} - ${resultData.email}`
+			);
+			if (secondaryIntent) {
+				window.fdc3.raiseIntent(secondaryIntent.name, context).catch((err) => {
+					agentLogger?.error(
+						`Error raising secondary intent: ${err instanceof Error ? err.message : String(err)}`
+					);
 				});
 			}
 			break;
@@ -119,7 +164,51 @@ async function onSearch(request: Agent.SearchListenerRequest): Promise<Search.Se
 	const { pageNumber, pageSize } = context;
 	try {
 		let results: Search.SearchResult[] = [];
+		const actions: Search.SearchAction[] = [];
 
+		if (primaryIntent) {
+			actions.push({
+				name: "intent",
+				title: primaryIntent.displayName,
+				description: `Raise ${primaryIntent.displayName || primaryIntent.name} Intent`
+			});
+		}
+		if (secondaryIntent) {
+			actions.push({
+				name: "intent2",
+				title: secondaryIntent.displayName,
+				description: `Raise ${secondaryIntent.displayName || secondaryIntent.name} Intent`
+			});
+		}
+		if (broadcastContext) {
+			const currentContextGroup = await window.fdc3.getCurrentChannel();
+			if (currentContextGroup) {
+				let currentColor = currentContextGroup.displayMetadata?.color;
+				if (currentColor) {
+					currentColor = currentColor.replace("#", "%23");
+					actions.push({
+						name: "broadcast",
+						title: "Broadcast",
+						description: "Broadcast contact on the matching channel.",
+						icon: {
+							dark: `data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20x='10'%20y='10'%20width='80'%20height='80'%20fill='${currentColor}'/%3E%3C/svg%3E`,
+							light: `data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20x='10'%20y='10'%20width='80'%20height='80'%20fill='${currentColor}'/%3E%3C/svg%3E`
+						}
+					} as Search.SearchAction);
+				} else {
+					agentLogger?.info("Current context group has no color");
+					actions.push({
+						name: "broadcast",
+						title: "Broadcast",
+						description: "Broadcast contact on the matching channel."
+					});
+				}
+			} else {
+				agentLogger?.info(
+					"No current context group assigned so broadcast action will not be added even though it is enabled."
+				);
+			}
+		}
 		// Filter userData by name and email (case-insensitive)
 		const searchQuery = query.toLowerCase();
 		const filteredUsers = userData.filter((user) => {

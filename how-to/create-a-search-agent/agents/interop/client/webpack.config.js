@@ -17,7 +17,7 @@ module.exports = [
 			extensions: ['.tsx', '.ts', '.js']
 		},
 		output: {
-			filename: 'agent.search.openlibrary.bundle.js',
+			filename: 'agent.bundle.js',
 			library: {
 				type: 'module'
 			},

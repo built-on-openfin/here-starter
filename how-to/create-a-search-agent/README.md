@@ -14,3 +14,4 @@ Instructions on how to configure a search agent can be found here: <https://reso
 | Example                                                                 | Description                                                                                                                 |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | [OpenLibrary Agent](./agents/openlibrary)   | This is a basic search agent that searches open library and lets you launch OpenLibrary web pages inside of Enterprise Browser.  |
+| [Interop Agent](./agents/interop)   | This is a basic search agent that searches a JSON Contact Array and can support triggering interop capabilities using the selected result (raising an intent or broadcasting).   |

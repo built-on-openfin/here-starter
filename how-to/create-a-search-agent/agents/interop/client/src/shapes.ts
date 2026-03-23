@@ -124,9 +124,17 @@ export interface Logger {
 export interface SearchAgentConfigData {
 	[key: string]: unknown;
 	/**
-	 * The intent of the search agent.
+	 * The primary intent of the search agent.
 	 */
 	intent: string;
+	/**
+	 * The secondary intent of the search agent.
+	 */
+	intent2: string;
+	/**
+	 * The broadcast setting of the search agent. YES if the agent should broadcast the context after raising the intent, NO if it should not, or leave blank to disable the broadcast action.
+	 */
+	broadcast: string;
 	/**
 	 * The data source for the search agent.
 	 */

@@ -1,6 +1,6 @@
 {
 	"$schema": "https://resources.here.io/schemas/agents/v1.0/custom-agent.json",
-	"type": "searchProvider",
+	"type": "custom",
 	"version": "1.0",
 	"url": "http://localhost:8181/agent-search-openlibrary.html",
 	"title": "OpenLibrary",
