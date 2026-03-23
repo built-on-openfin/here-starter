@@ -5,7 +5,7 @@ import { init as getSearchAgent } from "./search";
  * Initializes the search agent.
  */
 async function init(): Promise<void> {
-	const openLibrarySearchAgent = await getSearchAgent({
+	const agent = await getSearchAgent({
 		info: (message: unknown, ...optionalParams: unknown[]) => {
 			console.log(message, optionalParams);
 		},
@@ -22,7 +22,7 @@ async function init(): Promise<void> {
 			console.debug(message, optionalParams);
 		}
 	});
-	const searchAgent = await Agent.register(openLibrarySearchAgent);
+	const searchAgent = await Agent.register(agent);
 	await searchAgent.setIsReady(true);
 }
 

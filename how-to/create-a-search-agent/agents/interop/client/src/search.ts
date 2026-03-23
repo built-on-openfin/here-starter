@@ -10,7 +10,7 @@ let secondaryIntent: { name: string; displayName: string } | undefined;
 let broadcastContext: boolean = false;
 
 /**
- * Returns a search agent implementation for OpenLibrary.
+ * Returns a search agent implementation for an Interop Agent.
  * @param logger An optional logger for this agent to use.
  * @returns The search agent implementation.
  */
