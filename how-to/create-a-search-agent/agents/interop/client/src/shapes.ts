@@ -1,14 +1,4 @@
 /**
- * Interface for the configuration.
- */
-export interface OpenLibrarySearchResultData {
-	/**
-	 * The id of the author.
-	 */
-	authorId: string;
-}
-
-/**
  * Interface for user search result data.
  */
 export interface UserSearchResultData {
@@ -24,58 +14,6 @@ export interface UserSearchResultData {
 	 * The user's name.
 	 */
 	name: string;
-}
-
-/**
- * Interface for a search result.
- */
-export interface OpenLibraryDocument {
-	/**
-	 * The key of the author.
-	 */
-	author_key: string[];
-	/**
-	 * The name of the author.
-	 */
-	author_name: string[];
-	/**
-	 * The key of the document.
-	 */
-	cover_edition_key: string;
-	/**
-	 * The publisher of the document.
-	 */
-	publisher: string;
-	/**
-	 * The title of the document.
-	 */
-	title: string;
-	/**
-	 * The ebook access of the document.
-	 */
-	ebook_access: string;
-	/**
-	 * The first publish year of the document.
-	 */
-	first_publish_year: number;
-}
-
-/**
- * Interface for a search result.
- */
-export interface OpenLibrarySearchResult {
-	/**
-	 * The number of results found.
-	 */
-	start: number;
-	/**
-	 * The number of results found.
-	 */
-	numFound: number;
-	/**
-	 * The results found.
-	 */
-	docs: OpenLibraryDocument[];
 }
 
 /**
