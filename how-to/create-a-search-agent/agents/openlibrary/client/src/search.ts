@@ -88,10 +88,12 @@ async function onSearch(request: Agent.SearchListenerRequest): Promise<Search.Se
 						description: `Go to ${title} in OpenLibrary`
 					},
 					{
-						darkIcon:
+						icon: { 
+							dark:
 							"data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.31 4.395C3.03 5.81 4.19 6.965 5.605 7.69L6.705 6.59C6.84 6.455 7.04 6.41 7.215 6.47C7.775 6.655 8.38 6.755 9 6.755C9.275 6.755 9.5 6.98 9.5 7.255V9C9.5 9.275 9.275 9.5 9 9.5C4.305 9.5 0.5 5.695 0.5 1C0.5 0.725 0.725 0.5 1 0.5H2.75C3.025 0.5 3.25 0.725 3.25 1C3.25 1.625 3.35 2.225 3.535 2.785C3.59 2.96 3.55 3.155 3.41 3.295L2.31 4.395Z' fill='%23FFFFFF'/%3E%3C/svg%3E%0A",
-						lightIcon:
-							"data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.31 4.395C3.03 5.81 4.19 6.965 5.605 7.69L6.705 6.59C6.84 6.455 7.04 6.41 7.215 6.47C7.775 6.655 8.38 6.755 9 6.755C9.275 6.755 9.5 6.98 9.5 7.255V9C9.5 9.275 9.275 9.5 9 9.5C4.305 9.5 0.5 5.695 0.5 1C0.5 0.725 0.725 0.5 1 0.5H2.75C3.025 0.5 3.25 0.725 3.25 1C3.25 1.625 3.35 2.225 3.535 2.785C3.59 2.96 3.55 3.155 3.41 3.295L2.31 4.395Z' fill='%23140611'/%3E%3C/svg%3E%0A",
+							light:
+							"data:image/svg+xml,%3Csvg width='10' height='10' viewBox='0 0 10 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2.31 4.395C3.03 5.81 4.19 6.965 5.605 7.69L6.705 6.59C6.84 6.455 7.04 6.41 7.215 6.47C7.775 6.655 8.38 6.755 9 6.755C9.275 6.755 9.5 6.98 9.5 7.255V9C9.5 9.275 9.275 9.5 9 9.5C4.305 9.5 0.5 5.695 0.5 1C0.5 0.725 0.725 0.5 1 0.5H2.75C3.025 0.5 3.25 0.725 3.25 1C3.25 1.625 3.35 2.225 3.535 2.785C3.59 2.96 3.55 3.155 3.41 3.295L2.31 4.395Z' fill='%23140611'/%3E%3C/svg%3E%0A"
+						},
 						name: "view-author",
 						title: "View author",
 						description: `Go to profile of ${author.join(", ")} in OpenLibrary`
