@@ -2,7 +2,7 @@
 
 > **_:information_source: Here:_** [Here](https://www.here.io) is a commercial product and this repo is for evaluation purposes. Use of Here Core, Enterprise is only granted pursuant to a license from [Here](https://www.here.io) (OpenFin). Please [**contact us**](https://www.here.io/contact) if you would like to request a developer evaluation or to discuss a production license.
 
-## Here 10
+## Here 11
 
 Here is a full experience offering where an Enterprise Browser UI is made available and is backed by a set of Administrative screens and services. Your own authentication (e.g. Entra, Okta) can be plugged in and you have the ability of creating custom Search Agents for enabling [deep search](https://www.here.io/here-browser/deep-search). This starter will provide examples of how to take advantage of our offering.
 
@@ -38,6 +38,7 @@ This section covers examples that can be used to extend the capabilities of Ente
 | Example                                                            | Description                                                                                                                                                                                                     |
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [How To Create Search Agents](./how-to/create-a-search-agent/)     | This example shows you how to build search agents that can be added to your Enterprise Browser instance through the Admin panels.                                                                                |
+| [How To Create A Redirect Page](./how-to/create-a-redirect-page/)     | This example shows a basic example of how to create a page that can redirect to a target url when loaded within a Supertab.                   |
 
 ### Services
 

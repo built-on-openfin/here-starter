@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Navigation Service</title>
+		<script>
+			// 1. Configuration & Dictionary
+			const colorMap = {
+				green: '#009159',
+				blue: '#004a99',
+				red: '#db0011',
+				purple: '#4b286d',
+				dark: '#212121'
+			};
+			const defaultColor = colorMap['dark'];
+
+			// 2. Extract Parameters: Determine Brand Color
+			const params = new URLSearchParams(window.location.search);
+			const rawUrl = params.get('url');
+			const rawName = params.get('name') || 'Website';
+			const rawBrand = params.get('brand')?.toLowerCase();
+
+			// 3. Logic: Determine Brand Color
+			const activeColor = colorMap[rawBrand] || defaultColor;
+
+			// 4. URL & Name Validation
+			function getValidatedUrl(urlPath) {
+				try {
+					const url = new URL(urlPath);
+					return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+				} catch (e) {
+					return null;
+				}
+			}
+
+			function getSafeName(name) {
+				const safePattern = /^[a-zA-Z0-9\s\|\-]+$/;
+				return safePattern.test(name) ? name : 'Website';
+			}
+
+			const targetUrl = getValidatedUrl(rawUrl);
+			const targetName = getSafeName(rawName);
+
+			// 5. Immediate Redirect Logic
+			if (targetUrl && window.history.length <= 1) {
+				window.location.replace(targetUrl);
+			}
+		</script>
+		<style>
+			:root {
+				--primary-color: #009159;
+				--dark: #212121;
+				--grey: #666666;
+				--bg: #ffffff;
+				--light-grey: #f4f7f6;
+				--border-subtle: #e0e0e0;
+			}
+
+			body {
+				font-family: 'Open Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
+				background-color: var(--light-grey);
+				color: var(--dark);
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				min-height: 100vh;
+				margin: 0;
+				padding: 20px;
+			}
+
+			.card {
+				background: var(--bg);
+				padding: 2.5rem;
+				border-radius: 2px;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+				text-align: center;
+				max-width: 500px;
+				width: 100%;
+				border-top: 5px solid var(--primary-color);
+			}
+
+			.header-label {
+				color: var(--primary-color);
+				font-weight: 800;
+				font-size: 0.8rem;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+				margin-bottom: 1.5rem;
+				display: block;
+			}
+
+			h1 {
+				font-size: 1.4rem;
+				font-weight: 600;
+				margin: 0 0 1rem 0;
+			}
+
+			.info-text {
+				font-size: 0.9rem;
+				color: var(--grey);
+				margin-bottom: 1.5rem;
+			}
+
+			/* URL Display Box */
+			.url-viewer {
+				background: #f9f9f9;
+				border: 1px solid var(--border-subtle);
+				padding: 1rem;
+				margin-bottom: 2rem;
+				border-radius: 4px;
+				text-align: left;
+			}
+
+			.url-label {
+				display: block;
+				font-size: 0.7rem;
+				font-weight: 700;
+				color: var(--grey);
+				text-transform: uppercase;
+				margin-bottom: 0.5rem;
+			}
+
+			#display-url {
+				font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+				font-size: 0.85rem;
+				color: var(--dark);
+				word-break: break-all; /* Ensures long URLs wrap properly */
+				display: block;
+				line-height: 1.4;
+			}
+
+			.btn {
+				background-color: var(--primary-color);
+				color: white;
+				border: none;
+				padding: 1rem 3rem;
+				border-radius: 2px;
+				font-size: 0.9rem;
+				font-weight: 700;
+				text-transform: uppercase;
+				cursor: pointer;
+				width: 100%;
+				transition: background 0.2s;
+			}
+
+			.btn:hover {
+				opacity: 0.9;
+			}
+
+			.hidden {
+				display: none;
+			}
+
+			.error-card {
+				border-top-color: #d32f2f;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="ui-container" class="card hidden">
+			<span class="header-label">Navigation Service</span>
+			<h1 id="display-title"></h1>
+			<p class="info-text">Please review the destination URL and click the 'Navigate' button when ready:</p>
+
+			<div class="url-viewer">
+				<span class="url-label" id="url-label"></span>
+				<span id="display-url"></span>
+			</div>
+
+			<button class="btn" onclick="handleNavigation()">Navigate</button>
+		</div>
+
+		<div id="error-container" class="card error-card hidden">
+			<span class="header-label" style="color: #d32f2f">Navigation Service Error</span>
+			<h1>Invalid Request</h1>
+			<p class="info-text">The URL provided is either missing or does not meet our security protocols.</p>
+		</div>
+
+		<script>
+			// Apply the dynamic brand color immediately
+			document.documentElement.style.setProperty('--primary-color', activeColor);
+			const uiBox = document.getElementById('ui-container');
+			const errorBox = document.getElementById('error-container');
+			const titleEl = document.getElementById('display-title');
+			const urlEl = document.getElementById('display-url');
+			const urlLabel = document.getElementById('url-label');
+
+			if (!targetUrl) {
+				errorBox.classList.remove('hidden');
+			} else if (window.history.length > 1) {
+				uiBox.classList.remove('hidden');
+
+				// SAFE: textContent treats inputs as raw text, preventing XSS
+				titleEl.textContent = targetName;
+				urlEl.textContent = targetUrl;
+				urlLabel.textContent = `${targetName} URL`;
+			}
+
+			function handleNavigation() {
+				if (targetUrl) {
+					window.location.replace(targetUrl);
+				}
+			}
+		</script>
+	</body>
+</html>

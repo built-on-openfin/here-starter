@@ -1,0 +1,39 @@
+{
+	"$schema": "https://resources.here.io/schemas/agents/v1.0/custom-agent.json",
+	"type": "custom",
+	"url": "http://localhost:8080/agent-search.html",
+	"title": "Help",
+	"description": "Allows the search for help content.",
+	"icon": "data:image/jpg;base64,/9j/4AAQSkZJRgABAQEAkACQAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCABQAFADASIAAhEBAxEB/8QAGwABAAMBAQEBAAAAAAAAAAAAAAEICQcGAwX/xAA3EAABAwMCBAIGCAcAAAAAAAABAAIDBAUGBxEIEiExUZETFDJBUnEJFRYXV2GV0iIzNUJDVbP/xAAbAQEAAgMBAQAAAAAAAAAAAAAABAUBAgYDB//EACoRAAMAAQIDBgcBAAAAAAAAAAABAgMEEQUhMRIVQVJxkRMUUYGxwdHw/9oADAMBAAIRAxEAPwCoSIi60+qhERAEREAREQBERAERANyB4oAo3HiPNX90D0r0O074ZaPWvULAYsoq6+j+sq177YLjPHG6cxxwwQnoA0cpJ6EkuJOwAHvKi6cK9NdJ7RJoNGZqe+W/H3Obg7eQ1FZEZIng8v8ALDRs5x6g7dDuCqq+KpW5mG9ntv6ER6tJtKW9jMbceI803HiPNbGHQbREEj7oMN6dP6LT/tUfcNoj+EGG/otP+1Ru/sfkZp89PlMdNx4jzUrYr7htEfwgw39Fp/2rifF3w56SR6LZBmeN4XacfvON07a6nqLZTNpxKwSND4pGs2a9pa47EjcEAg9wfTDxvFlyKOy1vyNp1s1SW3UzhRCNiR4IromBS32h81ClvtD5oDWrhMJbw3aekEjazN677f5ZF1vncP73eHtKo32syXB/o7bPlGIXuotF3orJR+r1kBAfEXVwa4jcEdWuIPTsV8NTuI/UKexaa0llxHUPDp6/I7NTXC7XSgigprlDI1rZYmvDnc3pCefsN2gnp2XGXo7z5aqfGqXtz/ZSvFV02vqy33M3xCczfEKjem2e6x546+3O4ZXrzXilyWuoInYjabfUW6OGOYcsbnSgOD2g9QOgby+/dfk5DrpnVJVarXS+at6oWyXH8lrLZYGWa1081ojcHOEEFTK+PaMlwA2LgS3r1Kd2ZHTlUt16/wAM/ArdpNf77F+iQO5AXJ+LAg8N+oRH+lf/ANI1Xm46j8Qtx1PsWFZTftQ6OuGC0N1udswKio6iobWue4OleyUFgaWlnOWnYOIDei6nqi67u4MMyN9mzGWt+qar0j8tpoYLoR6y3l9KyH+ADbbl27t2J6pGkrBlx06T3a6ephR2Lnmuq/JmO72j81Cl3tH5qF2ZdBAdjuiIC9Ghet/DvmfDjRaHa132CzttsAoaqnq5pqeOshZOZYpIpox0PshzdwQWnuCus5ZqvwcZvarDZMk1Rx6po8araW4W1jbjPGYp6dvLE4loBeAPc7cH3rL4EjsdlPM74j5qqvhOO7dq6XNvk/F9SJWjl12lTRoRHb/o/wCCrnrKXU2ClfU1T6yVtNllyhY6Z7+dzuRjw3qfy/Jepps44IaayZfjg1CxqW3Z3VyV19gnuM8jamd/d7eYbxkHYjk22IBHULM7md8R805nfEfNK4Uq65a9zD0e/W2aG3CLgHudRQVlZqhTGptlthtFNPHlNwjlbSRb+jiL2ODnBvNsNyegA9wXn9fNedAcZ4e7no5pHlJyKa8xOpIWR1dRWeqxyTCSWWWom3J7ENbzE7kdgFRLmd8R81BJPc7raeGSqmruns99m+RlaRJpum9gTuSfFERWZLCIiAIiIAiIgCIiAIiID//Z",
+	"features": {
+		"search": {
+			"filters": [],
+			"supportsPaging": false
+		}
+	},
+	"configurationFields": [
+		{
+			"name": "primaryHelpUrl",
+			"title": "Primary Help JSON Url",
+			"placeholder": "Enter a url to a JSON file that follows the structure of a search index."
+		},
+		{
+			"name": "secondaryHelpUrl",
+			"title": "Secondary Help JSON Url",
+			"placeholder": "Enter a url to a JSON file that follows the structure of a search index.",
+			"defaultValue": "N/A"
+		},
+		{
+			"name": "tertiaryHelpUrl",
+			"title": "Tertiary Help JSON Url",
+			"placeholder": "Enter a url to a JSON file that follows the structure of a search index.",
+			"defaultValue": "N/A"
+		},
+		{
+			"name": "quaternaryHelpUrl",
+			"title": "Quaternary Help JSON Url",
+			"placeholder": "Enter a url to a JSON file that follows the structure of a search index.",
+			"defaultValue": "N/A"
+		}
+	]
+}

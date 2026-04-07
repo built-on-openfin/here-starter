@@ -1,0 +1,19 @@
+{
+	"name": "here-starter-create-a-redirect-page",
+	"version": "11.1.0",
+	"description": "Here Starter -- Create a redirect page",
+	"main": "index.js",
+	"scripts": {
+		"client": "node ./scripts/launch.mjs http://localhost:8181/index.html?url=https://www.here.io&name=HERE&brand=dark",
+		"build": "echo nothing to build",
+		"start": "npx --yes http-server ./public -p 8181 -c-1",
+		"setup": "echo nothing to setup"
+	},
+	"author": "john.mandia@here.io",
+	"contributors": [],
+	"license": "SEE LICENSE IN LICENSE.MD",
+	"dependencies": {
+	},
+	"devDependencies": {
+	}
+}
