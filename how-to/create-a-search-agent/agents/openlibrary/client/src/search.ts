@@ -16,8 +16,8 @@ let agentLogger: Logger | undefined;
  */
 export async function init(logger?: Logger): Promise<Agent.AgentRegistrationConfig> {
 	agentLogger = logger;
-	const { exampleSetting } = await Agent.getConfiguration<SearchAgentConfigData>();
-	agentLogger?.info("Agent example setting (init)", exampleSetting);
+	const config = await Agent.getConfiguration<SearchAgentConfigData>();
+	agentLogger?.info("Agent configuration (init)", config);
 	return {
 		search: {
 			onAction,
