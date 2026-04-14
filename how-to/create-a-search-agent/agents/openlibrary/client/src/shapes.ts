@@ -101,12 +101,14 @@ export interface Logger {
 }
 
 /**
- * Interface for the search agent configuration data.
+ * Values for `configurationFields` in agent-schema.json (text, password, checkbox as boolean).
+ * Extends `Record<string, unknown>` for `Agent.getConfiguration<T>()`.
  */
-export interface SearchAgentConfigData {
-	[key: string]: unknown;
-	/**
-	 * An example setting.
-	 */
-	exampleSetting: string;
+export interface SearchAgentConfigData extends Record<string, unknown> {
+	/** `fieldType: "text"`. */
+	exampleTextSetting: string;
+	/** `fieldType: "password"`. */
+	examplePasswordSetting: string;
+	/** `fieldType: "checkbox"`. */
+	exampleCheckboxSetting: boolean;
 }

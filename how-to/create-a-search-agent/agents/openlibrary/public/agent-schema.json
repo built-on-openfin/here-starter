@@ -1,5 +1,5 @@
 {
-	"$schema": "https://resources.here.io/schemas/agents/v1.0/custom-agent.json",
+	"$schema": "https://resources.here.io/schemas/agents/v1.1/custom-agent.json",
 	"type": "custom",
 	"version": "1.0",
 	"url": "http://localhost:8181/agent-search-openlibrary.html",
@@ -31,9 +31,20 @@
 	},
 	"configurationFields": [
 		{
-			"name": "exampleSetting",
-			"title": "Example Setting",
-			"placeholder": "This is an example setting"
+			"name": "exampleTextSetting",
+			"title": "Example Text Setting",
+			"fieldType": "text"
+		},
+		{
+			"name": "examplePasswordSetting",
+			"title": "Example Password Setting",
+			"fieldType": "password"
+		},
+		{
+			"name": "exampleCheckboxSetting",
+			"title": "Example Checkbox Setting",
+			"fieldType": "checkbox",
+			"defaultValue": "true"
 		}
 	]
 }
