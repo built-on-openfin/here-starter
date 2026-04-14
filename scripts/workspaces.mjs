@@ -3,40 +3,48 @@
  * It is much like using the --workspaces option for npm commands,
  * but it fails fast when there is an error.
  */
-import { spawn } from 'child_process';
-import FastGlob from 'fast-glob';
-import fs from 'fs/promises';
-import path from 'path';
+import { spawn } from "child_process";
+import FastGlob from "fast-glob";
+import fs from "fs/promises";
+import path from "path";
 
 /**
  * Execute the process.
  */
 async function run() {
-	console.log('Workspaces');
-	console.log('==========');
-	console.log();
-	console.log(`Platform: ${process.platform}`);
+  console.log("Workspaces");
+  console.log("==========");
+  console.log();
+  console.log(`Platform: ${process.platform}`);
 
-	if (process.argv.length <= 2) {
-		throw new Error('No command specified');
-	}
+  if (process.argv.length <= 2) {
+    throw new Error("No command specified");
+  }
 
-	const command = process.argv[2];
-	console.log(`Command: ${command}`);
+  const command = process.argv[2];
+  console.log(`Command: ${command}`);
 
-	const packageJson = await loadJson('package.json');
+  const packageJson = await loadJson("package.json");
 
-	const workspaces = await FastGlob(packageJson.workspaces, { onlyDirectories: true });
+  const workspaces = await FastGlob(packageJson.workspaces, {
+    onlyDirectories: true,
+  });
 
-	for (const workspace of workspaces) {
-		const workspacePackageJsonFilename = path.join(workspace, 'package.json');
-		if (await fileExists(workspacePackageJsonFilename)) {
-			const workspacePackageJson = await loadJson(workspacePackageJsonFilename);
-			if (workspacePackageJson?.scripts?.[command]) {
-				await runShellCmd('npm', ['run', command], workspace);
-			}
-		}
-	}
+  for (const workspace of workspaces) {
+    const workspacePackageJsonFilename = path.join(workspace, "package.json");
+    if (await fileExists(workspacePackageJsonFilename)) {
+      const workspacePackageJson = await loadJson(workspacePackageJsonFilename);
+      if (workspacePackageJson?.scripts?.[command]) {
+        try {
+          console.log();
+          console.log(`Running in workspace: ${workspace}`);
+          await runShellCmd("npm", ["run", command], workspace);
+        } catch (err) {
+          console.error(`Error running command in workspace: ${workspace}`);
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -45,9 +53,9 @@ async function run() {
  * @returns The loaded JSON.
  */
 async function loadJson(filePath) {
-	const content = await fs.readFile(filePath, 'utf8');
+  const content = await fs.readFile(filePath, "utf8");
 
-	return JSON.parse(content);
+  return JSON.parse(content);
 }
 
 /**
@@ -58,25 +66,25 @@ async function loadJson(filePath) {
  * @returns Promise to wait for command execution to complete.
  */
 async function runShellCmd(app, args, cwd) {
-	return new Promise((resolve, reject) => {
-		console.log(`${app} ${args.join(' ')}`);
+  return new Promise((resolve, reject) => {
+    console.log(`${app} ${args.join(" ")}`);
 
-		const osCommand = process.platform.startsWith('win') ? `${app}.cmd` : app;
+    const osCommand = process.platform.startsWith("win") ? `${app}.cmd` : app;
 
-		const sp = spawn(osCommand, args, {
-			stdio: 'inherit',
-			shell: true,
-			cwd
-		});
+    const sp = spawn(osCommand, args, {
+      stdio: "inherit",
+      shell: true,
+      cwd,
+    });
 
-		sp.on('exit', (exitCode, signals) => {
-			if (Number.parseInt(exitCode, 10) !== 0 || signals?.length) {
-				reject(new Error('Run failed'));
-			} else {
-				resolve();
-			}
-		});
-	});
+    sp.on("exit", (exitCode, signals) => {
+      if (Number.parseInt(exitCode, 10) !== 0 || signals?.length) {
+        reject(new Error("Run failed"));
+      } else {
+        resolve();
+      }
+    });
+  });
 }
 
 /**
@@ -85,12 +93,12 @@ async function runShellCmd(app, args, cwd) {
  * @returns True if the file exists.
  */
 async function fileExists(filename) {
-	try {
-		const stats = await fs.stat(filename);
-		return stats.isFile();
-	} catch {
-		return false;
-	}
+  try {
+    const stats = await fs.stat(filename);
+    return stats.isFile();
+  } catch {
+    return false;
+  }
 }
 
 run().catch((err) => console.error(err));
