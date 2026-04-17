@@ -13,6 +13,16 @@ import type { Logger, BloombergAgentSettings } from "./shapes";
 let agentLogger: Logger | undefined;
 let bbgChannel: OpenFin.ChannelProvider | undefined;
 let bbgConnection: BloombergConnection | undefined;
+let healthCheckTimerId: number | undefined;
+let healthCheckInProgress = false;
+let reconnectInProgress = false;
+let currentApiKey = "";
+let isConnectionHealthy = false;
+let lastSuccessfulHealthCheckAt: string | undefined;
+let lastFailedHealthCheckAt: string | undefined;
+
+const HEALTH_CHECK_INTERVAL_MS = 60_000;
+const HEALTH_CHECK_QUERY = "query { __typename }";
 
 /**
  * Returns an agent implementation for Bloomberg Terminal API.
@@ -34,6 +44,7 @@ export async function init(logger?: Logger): Promise<void> {
 
 	// Connect to BBG Terminal API here using the bbgAPIKey and set up any necessary state for your agent
 	await connectToBBGTerminal(bbgAPIKey);
+	startConnectionHealthChecks();
 
 	// Create an app channel named bbg-tcapi to which clients can connect to interact with the Bloomberg Terminal API
 	// This channel can be used to send requests from the client to the agent and receive responses back
@@ -56,6 +67,12 @@ function registerBBGMessageAction(): void {
 			// Process the payload, make a request to the Bloomberg Terminal API, and return the response
 			await sendToBBGTerminal(mnemonic, value, panel ?? "ZERO");
 		});
+
+		bbgChannel.register("bbg-health", async () => {
+			const status = getConnectionHealthStatus();
+			agentLogger?.debug("Connection health status requested", status);
+			return status;
+		});
 	} else {
 		agentLogger?.error("Failed to create or access Bloomberg Terminal API channel");
 	}
@@ -68,6 +85,8 @@ function registerBBGMessageAction(): void {
  */
 async function connectToBBGTerminal(bbgAPIKey: string): Promise<void> {
 	try {
+		currentApiKey = bbgAPIKey;
+
 		const retryIntervalMs = 30_000; // 30 seconds
 
 		agentLogger?.info("Connecting to Bloomberg Terminal API");
@@ -80,6 +99,8 @@ async function connectToBBGTerminal(bbgAPIKey: string): Promise<void> {
 		while (true) {
 			try {
 				bbgConnection = await connect(bbgAPIKey);
+				isConnectionHealthy = true;
+				lastSuccessfulHealthCheckAt = new Date().toISOString();
 				agentLogger?.info("Connected to Bloomberg Terminal");
 				return;
 			} catch (error) {
@@ -96,7 +117,7 @@ async function connectToBBGTerminal(bbgAPIKey: string): Promise<void> {
 		}
 	} catch (error) {
 		agentLogger?.error("Failed to connect to Bloomberg Terminal API", error);
-		throw error;
+		// throw error;
 	}
 }
 
@@ -129,6 +150,7 @@ async function createBBGChannel(): Promise<void> {
 async function sendToBBGTerminal(mnemonic: string, value: unknown, panel: string): Promise<void> {
 	try {
 		if (!bbgConnection) {
+			isConnectionHealthy = false;
 			agentLogger?.error("Bloomberg Terminal connection not established");
 			return;
 		}
@@ -177,10 +199,109 @@ async function sendToBBGTerminal(mnemonic: string, value: unknown, panel: string
 		agentLogger?.info("Constructed GraphQL query for Bloomberg Terminal API", { queryStr });
 
 		const result = await bbgConnection.executeApiRequest(queryStr, "local");
+		isConnectionHealthy = true;
+		lastSuccessfulHealthCheckAt = new Date().toISOString();
 		agentLogger?.info("Received response from Bloomberg Terminal API", { result });
 
 		agentLogger?.info("Bloomberg Terminal request completed", { mnemonic, value, panel });
 	} catch (error) {
+		isConnectionHealthy = false;
+		lastFailedHealthCheckAt = new Date().toISOString();
 		agentLogger?.error("Failed to send request to Bloomberg Terminal", { mnemonic, value, panel, error });
 	}
+}
+
+/**
+ * Starts a periodic check to verify that the Bloomberg connection is still active.
+ */
+function startConnectionHealthChecks(): void {
+	if (healthCheckTimerId) {
+		clearInterval(healthCheckTimerId);
+	}
+
+	healthCheckTimerId = window.setInterval(async () => {
+		if (healthCheckInProgress) {
+			return;
+		}
+
+		healthCheckInProgress = true;
+		try {
+			const isHealthy = await verifyConnectionHealth();
+			if (!isHealthy) {
+				await reconnectToBBGTerminal();
+			}
+		} finally {
+			healthCheckInProgress = false;
+		}
+	}, HEALTH_CHECK_INTERVAL_MS);
+
+	agentLogger?.info("Bloomberg connection health checks started", {
+		intervalMs: HEALTH_CHECK_INTERVAL_MS
+	});
+}
+
+// eslint-disable-next-line jsdoc/require-returns
+/**
+ * Verifies Bloomberg connection activity using a lightweight GraphQL probe.
+ */
+async function verifyConnectionHealth(): Promise<boolean> {
+	if (!bbgConnection) {
+		isConnectionHealthy = false;
+		lastFailedHealthCheckAt = new Date().toISOString();
+		agentLogger?.warn("Bloomberg connection health check failed: no active connection object");
+		return false;
+	}
+
+	try {
+		await bbgConnection.executeApiRequest(HEALTH_CHECK_QUERY, "local");
+		isConnectionHealthy = true;
+		lastSuccessfulHealthCheckAt = new Date().toISOString();
+		agentLogger?.debug("Bloomberg connection health check succeeded");
+		return true;
+	} catch (error) {
+		isConnectionHealthy = false;
+		lastFailedHealthCheckAt = new Date().toISOString();
+		bbgConnection = undefined;
+		agentLogger?.warn("Bloomberg connection health check failed", error);
+		return false;
+	}
+}
+
+/**
+ * Reconnects to Bloomberg Terminal when health checks detect a dropped connection.
+ */
+async function reconnectToBBGTerminal(): Promise<void> {
+	if (reconnectInProgress || !currentApiKey) {
+		return;
+	}
+
+	reconnectInProgress = true;
+	try {
+		agentLogger?.warn("Attempting Bloomberg Terminal reconnection after failed health check");
+		await connectToBBGTerminal(currentApiKey);
+	} catch (error) {
+		agentLogger?.error("Bloomberg Terminal reconnection failed", error);
+	} finally {
+		reconnectInProgress = false;
+	}
+}
+
+// eslint-disable-next-line jsdoc/require-returns
+/**
+ * Returns the current connection health state for diagnostics.
+ */
+function getConnectionHealthStatus(): {
+	isConnected: boolean;
+	hasConnectionObject: boolean;
+	lastSuccessfulHealthCheckAt?: string;
+	lastFailedHealthCheckAt?: string;
+	checkIntervalMs: number;
+} {
+	return {
+		isConnected: isConnectionHealthy,
+		hasConnectionObject: Boolean(bbgConnection),
+		lastSuccessfulHealthCheckAt,
+		lastFailedHealthCheckAt,
+		checkIntervalMs: HEALTH_CHECK_INTERVAL_MS
+	};
 }

@@ -3,6 +3,7 @@ import type OpenFin from "@openfin/core";
 import { fin } from "@openfin/core";
 
 let channelClient: OpenFin.ChannelClient | undefined;
+const CONNECTION_STATUS_POLL_MS = 30_000;
 
 /**
  * Connects to a channel with a timeout.
@@ -45,6 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 		console.log("Connecting to channel");
 		channelClient = await connectToChannelWithTimeout(`${fin.me.identity.uuid}/bbg-tcapi`, 15000);
 		console.log(`Successfully connected to the channel ${fin.me.identity.uuid}/bbg-tcapi`);
+		startConnectionStatusPolling();
 	} catch (error) {
 		console.error("Failed to connect to the channel:", error);
 	}
@@ -86,3 +88,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 		});
 	});
 });
+
+/**
+ * Starts periodic polling of the agent's Bloomberg connection health endpoint.
+ *
+ * The poll runs every `CONNECTION_STATUS_POLL_MS` milliseconds and dispatches
+ * `bbg-health` on the connected channel. Results are logged for diagnostics,
+ * and transient dispatch failures are logged without interrupting future polls.
+ */
+function startConnectionStatusPolling(): void {
+	window.setInterval(async () => {
+		if (!channelClient) {
+			return;
+		}
+
+		try {
+			const status = await channelClient.dispatch("bbg-health", {});
+			console.log("Bloomberg connection status", status);
+		} catch (error) {
+			console.error("Failed to retrieve Bloomberg connection status", error);
+		}
+	}, CONNECTION_STATUS_POLL_MS);
+}
