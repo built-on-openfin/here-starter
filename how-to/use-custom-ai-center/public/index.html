@@ -16,9 +16,17 @@
 
 			<section id="status" class="status"></section>
 
-			<section class="meta">
-				<span>Active page:</span>
-				<code id="active-page-id">unknown</code>
+			<section class="meta" aria-live="polite">
+				<span id="ai-views-status" class="meta-line"></span>
+				<div id="page-id-row" class="page-id-row hidden" hidden>
+					<span>Page id:</span>
+					<code id="active-page-id"></code>
+				</div>
+			</section>
+
+			<section class="transcript-toolbar">
+				<button type="button" id="get-ai-context" class="btn btn-primary">Get AI Context</button>
+				<button type="button" id="clear-transcript" class="btn" disabled>Clear</button>
 			</section>
 
 			<section class="console-wrap">

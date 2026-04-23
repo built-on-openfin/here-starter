@@ -6,7 +6,7 @@ import type {
 	RawAiContextResponse
 } from "./types";
 
-const FALLBACK_PAGE_ID = "unknown-page";
+export const FALLBACK_PAGE_ID = "unknown-page";
 const MOCK_CONTEXT_QUERY_PARAM = "mockContext";
 
 const MOCK_RAW_CONTEXT_RESPONSE: RawAiContextResponse = {
@@ -51,6 +51,10 @@ export class AiContextAdapter {
 
 	public isMockMode(): boolean {
 		return this.mockContextEnabled;
+	}
+
+	public hasAiEnabledViews(context: NormalizedContextResponse): boolean {
+		return Object.keys(context.results).length > 0;
 	}
 
 	public async getContext(): Promise<NormalizedContextResponse> {
