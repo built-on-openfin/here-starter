@@ -5,13 +5,24 @@
 This example shows how a HERE Browser Custom AI Center panel can load a
 client-provided URL and use an injected `window._aiContext` API to:
 
-- Fetch context automatically on panel load.
-- Register a context-change listener and refresh context whenever it changes.
+- Provide information about the supertab automatically as you load one.
+- Register a context-change listener and provide a button for displaying the
+  AI Context.
+- Add a button for fetching Interop/FDC3 Context (Signals)
 - Cache context output per `pageId` so switching tabs restores previous
   results.
 
 This sample focuses on platform API usage only. It does not call any model
 endpoint or stream model responses.
+
+For cases where you want your AI Center to fetch the context of the
+Tab/Supertab that has AI enabled content then we added a 'Get Signal Context'
+button which calls our example AI adapter to lookup the Context Group Id of
+the AI enabled content and it fetches the current context of type
+'here.ai.context'. This is just an example of using the Interop API to get
+context but you have the flexibility to determine what context you want to get
+or if you want a context listener to get everything published on a context
+group.
 
 ## Running the Sample
 
@@ -39,20 +50,23 @@ npm run start
 
 ## Using the Demo
 
-- Open the panel and context is fetched automatically.
-- As context changes, the listener re-reads `getContext()` and appends new
-  context entries.
+- Open the panel and information is fetched automatically.
+- Use the Get AI Context to fetch what is currently being shown (this could
+  be setup to read and refresh automatically). Content needs to be AI enabled.
+- Use the Get Signal Context button to get any context of 'here.ai.context'
+  published to the context group. At least 1 piece of content needs to be
+  enabled to fetch from the Context group.
 - Switch supertabs/pages, then return to see cached context restore for that
   page id.
-- Context output is append-only for the session (no clear/reset control in
-  this simplified version).
+- Context output can be cleared using the Clear button if needed.
 
 ## API Notes
 
 The adapter in `client/src/ai-context-adapter.ts` intentionally keeps API
 calls isolated from UI code.
 
-Based on observed HERE Browser behavior, this sample uses:
+Based on observed HERE Browser behavior, this sample uses the follow AI
+Context APIs:
 
 - `getContext()`
 - `setContextChangedListener(handler)`
@@ -81,8 +95,15 @@ response from the adapter.
   context restore.
 - The panel can react to context changes automatically via listener
   registration.
+- The panel can gain access to FDC3/Interop Context.
 
 ## What This Does Not Show
 
 - Sending context data to a model provider.
 - Prompt engineering, model orchestration, or token streaming.
+
+## Note About This Example
+
+This is an example to demonstrate the use of our AI Context and Interop APIs.
+This is not a production application and shouldn't be treated as such. Please
+use this as a guide and provide feedback. Thanks!

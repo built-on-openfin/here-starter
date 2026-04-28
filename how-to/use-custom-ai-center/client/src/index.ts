@@ -20,6 +20,7 @@ const pageIdRowEl = document.querySelector<HTMLElement>("#page-id-row");
 const activePageIdEl = document.querySelector<HTMLElement>("#active-page-id");
 const transcriptEl = document.querySelector<HTMLElement>("#transcript");
 const getAiContextBtn = document.querySelector<HTMLButtonElement>("#get-ai-context");
+const getSignalContextBtn = document.querySelector<HTMLButtonElement>("#get-signal-context");
 const clearTranscriptBtn = document.querySelector<HTMLButtonElement>("#clear-transcript");
 
 function nowIso(): string {
@@ -126,6 +127,29 @@ async function onGetAiContextClick(): Promise<void> {
 	}
 }
 
+async function onGetSignalContextClick(): Promise<void> {
+	if (!getSignalContextBtn) {
+		return;
+	}
+	getSignalContextBtn.disabled = true;
+	try {
+		const signalContext = await adapter.getSignalContext();
+		appendLog({
+			level: "context",
+			message: `Signal context:\n${JSON.stringify(signalContext, null, 2)}`,
+			timestamp: nowIso()
+		});
+	} catch (error) {
+		appendLog({
+			level: "error",
+			message: `Failed to get signal context: ${error instanceof Error ? error.message : String(error)}`,
+			timestamp: nowIso()
+		});
+	} finally {
+		getSignalContextBtn.disabled = false;
+	}
+}
+
 function onClearTranscriptClick(): void {
 	writePageLogs(currentPageId, []);
 	renderTranscript();
@@ -171,6 +195,9 @@ async function setupContextChangeListener(): Promise<void> {
 async function bootstrap(): Promise<void> {
 	getAiContextBtn?.addEventListener("click", () => {
 		void onGetAiContextClick();
+	});
+	getSignalContextBtn?.addEventListener("click", () => {
+		void onGetSignalContextClick();
 	});
 	clearTranscriptBtn?.addEventListener("click", onClearTranscriptClick);
 

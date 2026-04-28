@@ -1,3 +1,5 @@
+import type OpenFin from "@openfin/core";
+
 import type {
 	AiContextApi,
 	ContextResultPayload,
@@ -72,6 +74,30 @@ export class AiContextAdapter {
 
 		const rawResponse = await this.api.getContext();
 		return this.normalizeResponse(rawResponse);
+	}
+
+	public async getSignalContext(): Promise<OpenFin.FDC3.v2_0.Context[]> {
+		if (this.mockContextEnabled) {
+			return [];
+		}
+
+		if (!this.api?.getContext) {
+			return [];
+		}
+
+		const rawResponse = await this.api.getContext();
+		const viewIds = Object.keys(rawResponse?.results ?? {});
+		const identity = { uuid: fin.me.identity.uuid, name: viewIds[0] };
+		const view = await fin.View.wrap(identity);
+		const options = await view.getOptions();
+		const contextGroupId = options.interop?.currentContextGroup;
+		const client = fin.Interop.connectSync(fin.me.identity.uuid);
+		let aiContext: OpenFin.FDC3.v2_0.Context | undefined;
+		if (contextGroupId) {
+			await client.joinContextGroup(contextGroupId);
+			aiContext = await client.getCurrentContext("here.ai.context");
+		}
+		return aiContext ? [aiContext] : [];
 	}
 
 	public async ensureContextChangedListener(

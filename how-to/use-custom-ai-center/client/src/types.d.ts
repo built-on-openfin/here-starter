@@ -1,3 +1,5 @@
+import type { fin as FinApi } from "@openfin/core";
+
 export type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
 
 export interface CurrentContext {
@@ -41,6 +43,7 @@ export interface AiContextApi {
 }
 
 declare global {
+	const fin: typeof FinApi;
 	interface Window {
 		_aiContext?: AiContextApi;
 	}
