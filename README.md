@@ -39,6 +39,7 @@ This section covers examples that can be used to extend the capabilities of Ente
 | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [How To Create Search Agents](./how-to/create-a-search-agent/)     | This example shows you how to build search agents that can be added to your Enterprise Browser instance through the Admin panels.                                                                                |
 | [How To Create A Redirect Page](./how-to/create-a-redirect-page/)     | This example shows a basic example of how to create a page that can redirect to a target url when loaded within a Supertab.                   |
+| [How To Use Custom AI Center](./how-to/use-custom-ai-center/)     | This example shows how to build a Custom AI Center panel that reads AI context, listens for context changes, and fetches Interop context for AI-enabled content. |
 
 ### Services
 
