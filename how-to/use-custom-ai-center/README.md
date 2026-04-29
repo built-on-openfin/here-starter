@@ -32,26 +32,26 @@ group.
 npm install
 ```
 
-1. Build:
+2. Build:
 
 ```shell
 npm run build
 ```
 
-1. Start localhost server:
+3. Start the local server:
 
 ```shell
 npm run start
 ```
 
-1. Configure HERE Browser Custom AI Center URL to:
+4. In HERE Browser, set the Custom AI Center URL to:
 
 `http://localhost:8183/`
 
 ## Using the Demo
 
 - Open the panel and information is fetched automatically.
-- Use the Get AI Context to fetch what is currently being shown (this could
+- Use the Get AI Context button to fetch what is currently being shown (this could
   be setup to read and refresh automatically). Content needs to be AI enabled.
 - Use the Get Signal Context button to get any context of 'here.ai.context'
   published to the context group. At least 1 piece of content needs to be
@@ -71,7 +71,7 @@ Context APIs:
 - `getContext()`
 - `setContextChangedListener(handler)`
 
-`setContextChangedListener` callback payload is treated as opaque and the
+`setContextChangedListener` callback payload is treated as opaque, and the
 sample re-reads `getContext()` inside the callback.
 
 The context output includes `results.[entry].readability.data` when

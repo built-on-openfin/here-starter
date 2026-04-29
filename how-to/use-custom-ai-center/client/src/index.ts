@@ -67,7 +67,7 @@ function renderTranscript(): void {
 	}
 	const logs = getPageLogs(currentPageId);
 	if (logs.length === 0) {
-		transcriptEl.textContent = "No context loaded yet. Click Get AI Context.";
+		transcriptEl.textContent = "No context captured yet. Click Get AI Context to load data.";
 	} else {
 		transcriptEl.textContent = logs
 			.map((entry) => `[${entry.timestamp}] [${entry.level.toUpperCase()}] ${entry.message}`)
