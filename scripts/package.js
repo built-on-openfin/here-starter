@@ -5,7 +5,7 @@ const replace = require('replace-in-file');
 const yargs = require('yargs');
 const packageJson = require('../package.json');
 
-const DEFAULT_PORT = '8181';
+const DEFAULT_PORT = '8080';
 const DEFAULT_FOLDER = 'here-starter';
 const DEFAULT_PATH = 'here';
 const ENV_NAME = 'PKG_HOWTOS';
@@ -68,11 +68,13 @@ function packageItems(cliArgs) {
 
 	let workspaces = fg.sync(packageJson.workspaces, { onlyDirectories: true });
 	if (packageJson.packageExclude) {
-		workspaces = workspaces.filter((item) => !packageJson.packageExclude.includes(item));
+		workspaces = workspaces.filter(
+			(item) => !packageJson.packageExclude.some((exclude) => item === exclude || item.startsWith(`${exclude}/`))
+		);
 	}
 
 	for (const workspace of workspaces) {
-		let item = workspace.split('/')[1];
+		let item = workspace.split('/').slice(1).join('/');
 
 		if (cliArgs.legacy) {
 			execSync('npm run build-client', {
@@ -85,10 +87,6 @@ function packageItems(cliArgs) {
 		let targetDir;
 
 		if (fs.existsSync(sourceDir)) {
-			const parts = sourceDir.split('/');
-			if (parts.length === 4) {
-				item += `-${parts[2]}`;
-			}
 			targetDir = [publishDir, item].join('/');
 			fs.copySync(sourceDir, targetDir);
 		}
