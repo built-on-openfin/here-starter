@@ -17,8 +17,6 @@ jobs:
   build:
     name: Build and package HOWTOs
     runs-on: ubuntu-latest
-    env:
-      RELEASE_BRANCH_PREFIX: here/
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
