@@ -1,0 +1,77 @@
+name: Publish HOWTOs
+
+on:
+  push:
+    branches-ignore:
+      - gh-pages
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and package HOWTOs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          scope: '@openfin'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm ci
+
+      - name: Build packages
+        run: npm run build
+
+      - name: Package for publishing GitHub Pages
+        run: npm run package
+        env:
+          PKG_HOWTOS_LOCATION: github
+          PKG_HOWTOS_PATH: ${{ github.ref_name }}
+
+      - name: Upload artifacts GitHub Pages
+        uses: actions/upload-artifact@v7
+        with:
+          if-no-files-found: error
+          name: workflow-howtos-github
+          path: public-github/
+          retention-days: 1
+
+  publish-gh:
+    name: Publish HOWTOs GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: workflow-howtos-github
+          path: public-github/
+
+      - name: Publish
+        uses: JamesIves/github-pages-deploy-action@v4.7.4
+        with:
+          branch: gh-pages
+          folder: public-github
+          target-folder: ${{ github.ref_name }}
+  
