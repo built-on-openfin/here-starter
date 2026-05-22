@@ -44,28 +44,12 @@ jobs:
           PKG_HOWTOS_LOCATION: github
           PKG_HOWTOS_PATH: ${{ github.ref_name }}
 
-      - name: Package for publishing AWS S3 CDN
-        if: ${{ startsWith(github.ref_name, env.RELEASE_BRANCH_PREFIX) }}
-        run: npm run package
-        env:
-          PKG_HOWTOS_LOCATION: aws
-          PKG_HOWTOS_PATH: ${{ github.ref_name }}
-
       - name: Upload artifacts GitHub Pages
         uses: actions/upload-artifact@v7
         with:
           if-no-files-found: error
           name: workflow-howtos-github
           path: public-github/
-          retention-days: 1
-
-      - name: Upload artifacts AWS S3 CDN
-        if: ${{ startsWith(github.ref_name, env.RELEASE_BRANCH_PREFIX) }}
-        uses: actions/upload-artifact@v7
-        with:
-          if-no-files-found: error
-          name: workflow-howtos-aws
-          path: public-aws/
           retention-days: 1
 
   publish-gh:
