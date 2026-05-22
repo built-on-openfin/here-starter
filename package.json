@@ -22,7 +22,7 @@
     "how-to/**/*"
   ],
   "packageExclude": [
-    "how-to/hints-and-tips",
+    "how-to/use-notifications-service",
     "how-to/use-the-entitlements-api"
   ],
   "packageCustomFolder": "",
