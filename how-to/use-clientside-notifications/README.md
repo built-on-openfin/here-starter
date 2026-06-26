@@ -1,6 +1,4 @@
-![HERE Starter Example Application -- Using Client-side Notifications](../../assets/HERO-STARTER-HERE-CORE-UI.png)
-
-> **_:information_source: HERE Core UI:_** [HERE Starter](https://resources.here.io/docs/core/hc-ui/) is a commercial product and this repo is for evaluation purposes (See [LICENSE.MD](LICENSE.MD)). Use of the HERE Core Container and HERE Core UI components is only granted pursuant to a license from HERE (see [manifest](public/manifest.fin.json)). Please [**contact us**](https://www.here.io/contact) if you would like to request a developer evaluation key or to discuss a production license.
+> **_:information_source: HERE Starter:_** HERE Enterprise Browser is a commercial product and this repo is for evaluation purposes (See [LICENSE.MD](LICENSE.MD)). Use of these components is only granted pursuant to a license from HERE (see [manifest](public/manifest.fin.json)). Please [**contact us**](https://www.here.io/contact) if you would like to request a developer evaluation key or to discuss a production license.
 
 # Use Notifications
 
@@ -15,7 +13,7 @@ The example is a simple view that shows launching, interacting and auditing noti
 To run this sample you can:
 
 - Clone this repo and follow the instructions below. This will let you customize the sample to learn more about our APIs.
-
+- Launch the Github hosted version of this sample to interact with it by going to the following link: [Github Workspace Starter Use Notifications](https://start.openfin.co/?manifest=https%3A%2F%2Fbuilt-on-openfin.github.io%2Fworkspace-starter%2Fworkspace%2Fv23.2.0%2Fuse-notifications%2Fmanifest.fin.json)
 
 ## Getting Started
 
@@ -25,29 +23,31 @@ To run this sample you can:
 npm run setup
 ```
 
+
+
 2. Start the test server in a new window.
 
 ```shell
 npm run start
 ```
 
-4. Start the demonstration application.
+3. Start the demonstration application.
 
 ```shell
 Run the Enterprise Browser platform
-Add a new web app and set its url to http://localhost:8000/platform/provider.html
+Add a new web app in the Admin Console and set its url to http://localhost:8000/platform/provider.html
 Provide a valid name and ID
 Assign the appropriate users
 Publish your changes, quit EB and restart
 In a new tab in the search box type the name that you gave the application and launch it.
 ```
 
-5. Build the project if you change the code.
+4. Build the project if you change the code.
 
 ```shell
 npm run build
 ```
 
-![Use Notifications](openfin-use-notifications.gif)
+![Use Notifications](clientside-notifications.png)
 
 ---
