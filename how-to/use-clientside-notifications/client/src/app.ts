@@ -1,7 +1,4 @@
 import * as Notifications from "@openfin/notifications";
-import { ColorSchemeOptionType, getCurrentSync } from "@openfin/workspace-platform";
-
-const PLATFORM_ID = "use-notifications";
 
 const NOTIFICATION_SOUND_URL = "http://localhost:8080/assets/notification.mp3";
 
@@ -108,21 +105,6 @@ async function initializeDom(): Promise<void> {
 			}
 		}
 	});
-
-	const btnToggleTheme = document.querySelector("#btnPlatformToggleTheme");
-	if (btnToggleTheme) {
-		btnToggleTheme.addEventListener("click", async () => {
-			const platform = getCurrentSync();
-			const currentScheme = await platform.Theme.getSelectedScheme();
-			if (currentScheme === ColorSchemeOptionType.Light) {
-				window.document.body.classList.remove("theme-light");
-				await platform.Theme.setSelectedScheme(ColorSchemeOptionType.Dark);
-			} else {
-				window.document.body.classList.add("theme-light");
-				await platform.Theme.setSelectedScheme(ColorSchemeOptionType.Light);
-			}
-		});
-	}
 
 	const btnViewLogging = document.querySelector("#btnViewLogging");
 	if (btnViewLogging) {
@@ -411,8 +393,7 @@ async function showSimpleNotification(): Promise<void> {
 		id: randomUUID(),
 		soundOptions: {
 			mode: "silent"
-		},
-		platform: PLATFORM_ID
+		}
 	};
 
 	codeShowExample(notification);
@@ -430,7 +411,6 @@ async function showSimpleNotificationBodyDismiss(): Promise<void> {
 		category: "default",
 		template: "markdown",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		onSelect: { BODY_CLICK: Notifications.ActionBodyClickType.DISMISS_EVENT }
 	};
 
@@ -449,7 +429,6 @@ async function showSimpleNotificationBodyDismissAction(): Promise<void> {
 		category: "default",
 		template: "markdown",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		onSelect: { BODY_CLICK: Notifications.ActionBodyClickType.DISMISS_EVENT },
 		customData: {
 			action: "custom-action",
@@ -475,7 +454,6 @@ async function showActionableNotification(): Promise<void> {
 		category: "default",
 		template: "markdown",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		buttons: [
 			{
 				title: "Acknowledged",
@@ -511,7 +489,6 @@ async function showFormNotification(): Promise<void> {
 		category: "default",
 		template: "markdown",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		form: [
 			{
 				key: "amount",
@@ -567,7 +544,6 @@ async function showFormAdvancedNotification(): Promise<void> {
 		category: "default",
 		template: "markdown",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		form: [
 			{
 				type: "string",
@@ -779,8 +755,7 @@ async function showUpdatableNotification(): Promise<void> {
 		customData: {
 			count: 0
 		},
-		id,
-		platform: PLATFORM_ID
+		id
 	};
 
 	if (Object.keys(updatableNotifications).length === 0) {
@@ -814,7 +789,6 @@ async function showCustomNotification(): Promise<void> {
 		category: "default",
 		template: "custom",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		templateOptions: {
 			body: {
 				compositions: [
@@ -1048,8 +1022,7 @@ async function showSoundNotification(notificationSoundUrl: string): Promise<void
 		category: "default",
 		template: "markdown",
 		soundOptions: { mode: "silent" },
-		id: randomUUID(),
-		platform: PLATFORM_ID
+		id: randomUUID()
 	};
 
 	codeShowExample(notification);
@@ -1078,7 +1051,6 @@ async function showIndicatorNotification(): Promise<void> {
 		category: "default",
 		template: "custom",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		templateOptions: {
 			body: {
 				compositions: [
@@ -1125,7 +1097,6 @@ async function showCustomIndicatorNotification(): Promise<void> {
 		category: "default",
 		template: "custom",
 		id: randomUUID(),
-		platform: PLATFORM_ID,
 		templateOptions: {
 			body: {
 				compositions: [
@@ -1188,8 +1159,7 @@ async function createReminderNotification(
 		toast: "transient",
 		category: "default",
 		template: "markdown",
-		id,
-		platform: PLATFORM_ID
+		id
 	};
 
 	// Start countdown
