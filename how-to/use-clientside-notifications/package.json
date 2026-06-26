@@ -1,14 +1,10 @@
 {
-	"name": "openfin-workspace--use-notifications",
-	"version": "23.2.0",
-	"description": "HERE Core UI -- Use Notifications",
+	"name": "use-clientside-notifications",
+	"version": "11.1.0",
+	"description": "HERE -- Use Notifications",
 	"main": "index.js",
 	"scripts": {
-		"dos": "node ./scripts/dos.mjs && node ./scripts/kill.mjs",
-		"kill": "node ./scripts/kill.mjs",
-		"client": "node ./scripts/launch.mjs",
-		"build-client": "webpack build --config ./client/webpack.config.js --mode=development",
-		"build": "npm run build-client",
+		"build": "webpack build --config ./client/webpack.config.js --mode=development",
 		"start": "npx --yes http-server ./public -p 8080 -c-1",
 		"setup": "npm install && npm run build",
 		"prettier": "prettier --config .prettierrc --write .",
@@ -17,7 +13,7 @@
 		"markdownlint": "markdownlint **/*.md --ignore **/node_modules/**",
 		"validate": "npm run prettier && npm run eslint && npm run markdownlint"
 	},
-	"author": "martyn.janes@openfin.co",
+	"author": "martyn.janes@openfin.co, ameet.jayawant@here.io",
 	"license": "SEE LICENSE IN LICENSE.MD",
 	"dependencies": {
 		"@openfin/notifications": "^2.14.3",
@@ -26,7 +22,6 @@
 	},
 	"devDependencies": {
 		"@openfin/core": "43.104.1",
-		"@openfin/node-adapter": "43.104.1",
 		"eslint": "8.57.1",
 		"eslint-config-airbnb": "19.0.4",
 		"eslint-config-airbnb-typescript": "18.0.0",
