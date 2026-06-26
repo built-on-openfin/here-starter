@@ -1,7 +1,7 @@
 import * as Notifications from "@openfin/notifications";
 import { ColorSchemeOptionType, getCurrentSync } from "@openfin/workspace-platform";
 
-const PLATFORM_ID = "use-notifications";
+const PLATFORM_ID = "use-clientside-notifications";
 
 const NOTIFICATION_SOUND_URL = "http://localhost:8080/assets/notification.mp3";
 
@@ -52,6 +52,15 @@ async function initializeNotifications(): Promise<void> {
 }
 
 /**
+ * Clear the logging element.
+ */
+function clearLogging(): void {
+	if (loggingElement) {
+		loggingElement.textContent = "";
+	}
+}
+
+/**
  * Initialize the DOM elements.
  */
 async function initializeDom(): Promise<void> {
@@ -68,11 +77,7 @@ async function initializeDom(): Promise<void> {
 
 	const btnLoggingClear = document.querySelector("#btnLoggingClear");
 	if (btnLoggingClear) {
-		btnLoggingClear.addEventListener("click", () => {
-			if (loggingElement) {
-				loggingElement.textContent = "";
-			}
-		});
+		btnLoggingClear.addEventListener("click", clearLogging);
 	}
 
 	const btnCodeCopy = document.querySelector("#btnCodeCopy");
@@ -109,6 +114,8 @@ async function initializeDom(): Promise<void> {
 		}
 	});
 
+	codeContainer.style.display = "none";
+
 	const btnToggleTheme = document.querySelector("#btnPlatformToggleTheme");
 	if (btnToggleTheme) {
 		btnToggleTheme.addEventListener("click", async () => {
@@ -127,21 +134,22 @@ async function initializeDom(): Promise<void> {
 	const btnViewLogging = document.querySelector("#btnViewLogging");
 	if (btnViewLogging) {
 		btnViewLogging.addEventListener("click", () => {
-			loggingContainer.classList.remove("hidden");
-			codeContainer.classList.add("hidden");
-			btnViewLogging.classList.add("active");
-			btnViewCode?.classList.remove("active");
+			loggingContainer.style.display = "flex";
+			codeContainer.style.display = "none";
 		});
 	}
 
 	const btnViewCode = document.querySelector("#btnViewCode");
 	if (btnViewCode) {
 		btnViewCode.addEventListener("click", () => {
-			loggingContainer.classList.add("hidden");
-			codeContainer.classList.remove("hidden");
-			btnViewCode.classList.add("active");
-			btnViewLogging?.classList.remove("active");
+			loggingContainer.style.display = "none";
+			codeContainer.style.display = "flex";
 		});
+	}
+
+	const btnClearLogs = document.querySelector("#btnClearLogs");
+	if (btnClearLogs) {
+		btnClearLogs.addEventListener("click", clearLogging);
 	}
 
 	const btnNotificationSimple = document.querySelector("#btnNotificationSimple");

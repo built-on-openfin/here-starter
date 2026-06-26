@@ -10,140 +10,106 @@
 		<script src="../js/provider.bundle.js"></script>
 	</head>
 
-	<body class="col fill gap20">
-		<header class="row spread middle header-enhanced">
-			<div class="col header-content">
-				<div class="row middle gap10">
-					<image src="../common/images/favicon-32x32.png" alt="HERE" height="40px" class="brand-logo"></image>
-					<div class="col">
-						<h1>Notifications Example</h1>
-						<p class="header-subtitle">Explore HERE Enterprise Browser notification capabilities</p>
+	<body class="page-shell">
+		<div class="layout-shell">
+			<header class="hero hero-simple">
+				<div class="hero-copy">
+					<p class="eyebrow">HERE-inspired notifications</p>
+					<h1>Use Notifications Example</h1>
+					<p class="hero-copy-text">
+						A client-side notification playground styled with HERE's enterprise palette: deep surfaces, clean
+						contrast, and precise blue accents.
+					</p>
+				</div>
+			</header>
+
+			<main class="workspace-grid">
+				<section class="panel panel-stack scroll-vertical">
+					<div>
+						<h2>Notifications</h2>
+						<p class="panel-copy">
+							Trigger the notification patterns below to validate body clicks, forms, reminders, and custom
+							templates in a HERE-branded shell.
+						</p>
 					</div>
-				</div>
-			</div>
-			<div class="row middle gap20">
-				<span class="badge badge-info">Interactive Demo</span>
-			</div>
-		</header>
-		<main class="row fill gap20">
-			<div class="col fill left gap20 scroll-vertical notifications-panel">
-				<div class="section-header">
-					<h2>Notification Types</h2>
-					<p>Select a notification type to explore its capabilities</p>
-				</div>
-				<div class="button-grid">
-					<button id="btnNotificationSimple" class="btn-notification" disabled>
-						<span class="btn-title">Simple Notification</span>
-						<span class="btn-desc">Basic notification display</span>
-					</button>
-					<button id="btnNotificationBodyDismiss" class="btn-notification" disabled>
-						<span class="btn-title">Body Click Dismiss</span>
-						<span class="btn-desc">Dismiss by clicking body</span>
-					</button>
-					<button id="btnNotificationBodyDismissAction" class="btn-notification" disabled>
-						<span class="btn-title">Custom Action Dismiss</span>
-						<span class="btn-desc">Dismiss with custom action</span>
-					</button>
-					<button id="btnNotificationActionable" class="btn-notification" disabled>
-						<span class="btn-title">Actionable Notification</span>
-						<span class="btn-desc">With interactive actions</span>
-					</button>
-					<button id="btnNotificationForm" class="btn-notification" disabled>
-						<span class="btn-title">Form Notification</span>
-						<span class="btn-desc">Form input support</span>
-					</button>
-					<button id="btnNotificationFormAdvanced" class="btn-notification" disabled>
-						<span class="btn-title">Advanced Form</span>
-						<span class="btn-desc">Complex form handling</span>
-					</button>
-					<button id="btnNotificationUpdatable" class="btn-notification" disabled>
-						<span class="btn-title">Updatable Notification</span>
-						<span class="btn-desc">Real-time updates</span>
-					</button>
-					<button id="btnNotificationCustom" class="btn-notification" disabled>
-						<span class="btn-title">Custom Notification</span>
-						<span class="btn-desc">Fully customized layout</span>
-					</button>
-					<button id="btnNotificationWithIndicator" class="btn-notification" disabled>
-						<span class="btn-title">With Indicator</span>
-						<span class="btn-desc">Status indicator badge</span>
-					</button>
-					<button id="btnNotificationWithCustomIndicator" class="btn-notification" disabled>
-						<span class="btn-title">Custom Indicator</span>
-						<span class="btn-desc">Custom indicator styling</span>
-					</button>
-					<button id="btnNotificationWithSound" class="btn-notification" disabled>
-						<span class="btn-title">With Sound</span>
-						<span class="btn-desc">Audio notification</span>
-					</button>
-					<button id="btnNotificationCenterUserSettings" class="btn-notification" disabled>
-						<span class="btn-title">User Settings</span>
-						<span class="btn-desc">Notification preferences</span>
-					</button>
-					<button id="btnNotificationWithReminder" class="btn-notification" disabled>
-						<span class="btn-title">With Reminder</span>
-						<span class="btn-desc">Reminder functionality</span>
-					</button>
-					<button id="btnNotificationWithReminderCancel" class="btn-notification" disabled>
-						<span class="btn-title">Reminder & Cancel</span>
-						<span class="btn-desc">Set and cancel reminder</span>
-					</button>
-				</div>
-			</div>
-			<div class="col fill gap20 output-panel">
-				<div class="viewer-tabs">
-					<button id="btnViewLogging" class="tab-btn active" data-tab="logging">
-						<span class="tab-icon">📋</span>
-						Logging
-					</button>
-					<button id="btnViewCode" class="tab-btn" data-tab="code">
-						<span class="tab-icon">💻</span>
-						Code
-					</button>
-				</div>
-				<div class="col fill gap20 overflow-hidden" id="logging-container">
-					<h2>Execution Logs</h2>
-					<pre id="logging" class="scroll fill log-viewer"></pre>
-					<div class="row right">
-						<button id="btnLoggingClear" class="btn-secondary">Clear Logs</button>
+					<div class="control-stack">
+						<button id="btnNotificationSimple" class="secondary" disabled>Simple Notification</button>
+						<button id="btnNotificationBodyDismiss" class="secondary" disabled>
+							Body Click Dismiss Notification
+						</button>
+						<button id="btnNotificationBodyDismissAction" class="secondary" disabled>
+							Body Click Dismiss Custom Action Notification
+						</button>
+						<button id="btnNotificationActionable" class="secondary" disabled>Actionable Notification</button>
+						<button id="btnNotificationForm" class="secondary" disabled>Form Notification</button>
+						<button id="btnNotificationFormAdvanced" class="secondary" disabled>
+							Form Advanced Notification
+						</button>
+						<button id="btnNotificationUpdatable" class="secondary" disabled>Updatable Notification</button>
+						<button id="btnNotificationCustom" class="secondary" disabled>Custom Notification</button>
+						<button id="btnNotificationWithIndicator" class="secondary" disabled>
+							Notification with Indicator
+						</button>
+						<button id="btnNotificationWithCustomIndicator" class="secondary" disabled>
+							Notification with Custom Indicator
+						</button>
+						<button id="btnNotificationWithSound" class="secondary" disabled>
+							Notification with Custom Sound
+						</button>
+						<button id="btnNotificationCenterUserSettings" class="secondary" disabled>
+							Get Notification Center User Settings
+						</button>
+						<button id="btnNotificationWithReminder" class="secondary" disabled>
+							Notification with Set Reminder
+						</button>
+						<button id="btnNotificationWithReminderCancel" class="secondary" disabled>
+							Notification with Set and Cancel Reminder
+						</button>
 					</div>
-				</div>
-				<div class="col fill gap20 overflow-hidden hidden" id="code-container">
-					<h2>Code Editor</h2>
-					<textarea id="code" class="scroll fill width-full code-editor"></textarea>
-					<div class="row right gap10">
-						<button id="btnCodeNotification" class="btn-secondary" disabled>Show Notification</button>
-						<button id="btnCodeCopy" class="btn-primary" disabled>Copy Code</button>
+				</section>
+
+				<section class="panel panel-output">
+					<div class="panel-toolbar">
+						<button id="btnViewLogging">Logging</button>
+						<button id="btnViewCode">Code</button>
+						<button id="btnClearLogs">Clear Logs</button>
 					</div>
+					<div class="col fill gap20 overflow-hidden" id="logging-container">
+						<h2>Logging</h2>
+						<pre id="logging" class="scroll fill"></pre>
+						<div class="row right">
+							<button id="btnLoggingClear">Clear Logging</button>
+						</div>
+					</div>
+					<div class="col fill gap20 overflow-hidden" id="code-container">
+						<h2>Code</h2>
+						<textarea id="code" class="scroll fill width-full"></textarea>
+						<div class="row right gap10">
+							<button id="btnCodeNotification" disabled>Show Notification</button>
+							<button id="btnCodeCopy" disabled>Copy Code</button>
+						</div>
+					</div>
+				</section>
+			</main>
+
+			<footer class="footer-bar">
+				<div class="row gap10 footer-actions">
+					<button id="btnNotificationsCenterShow" disabled>Show</button>
+					<button id="btnNotificationsCenterHide" disabled>Hide</button>
+					<button id="btnNotificationStudioOpen" disabled>Notifications Studio</button>
 				</div>
-			</div>
-		</main>
-		<footer class="footer-enhanced">
-			<div class="row spread middle">
-				<div class="row middle gap10">
-					<span class="status-indicator" id="connection-status"></span>
-					<span class="status-text">Notification Center</span>
-				</div>
-				<div class="row gap10 footer-controls">
-					<button id="btnNotificationsCenterShow" class="btn-secondary" disabled>Show Center</button>
-					<button id="btnNotificationsCenterHide" class="btn-secondary" disabled>Hide Center</button>
-					<button id="btnNotificationStudioOpen" class="btn-secondary" disabled>Studio</button>
-					<a
-						href="https://resources.here.io/docs/core/hc-ui/notifications/"
-						target="_blank"
-						class="footer-link"
-					>
-						📚 Documentation
+				<div class="row gap10 footer-links">
+					<a href="https://resources.here.io/docs/core/hc-ui/notifications/" target="_blank">
+						Notification Center Docs
 					</a>
 					<a
 						href="https://developer.openfin.co/docs/services/notifications/stable/api/index.html"
 						target="_blank"
-						class="footer-link"
 					>
-						🔗 API Reference
+						API Docs
 					</a>
 				</div>
-			</div>
-		</footer>
+			</footer>
+		</div>
 	</body>
 </html>
