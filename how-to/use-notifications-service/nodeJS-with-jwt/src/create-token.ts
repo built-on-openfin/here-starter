@@ -1,8 +1,7 @@
 import jwt from "jsonwebtoken";
 
 // The jwt-api auth can either be a string or a buffer.  The string is the secret key and would be setup in the jwt-api auth settings for the org.
-// Ideally BMO would create this signed token themselves and we would configured a JWKS uri that they specify to validate the token.  This is what is currently
-// done with their other user of JWT API Auth.  Entra is the JWKS provider.
+// Ideally you would create this signed token and the platform uses a configured a JWKS uri to validate the token.  
 
 export default function createToken() {
   const tokenToSign = {
