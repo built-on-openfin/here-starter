@@ -22784,6 +22784,7 @@ let agentLogger;
 let bbgChannel;
 let bbgConnection;
 let healthCheckTimerId;
+let interopTrackingTimerId;
 let healthCheckInProgress = false;
 let reconnectInProgress = false;
 let currentApiKey = "";
@@ -22792,6 +22793,7 @@ let lastSuccessfulHealthCheckAt;
 let lastFailedHealthCheckAt;
 const HEALTH_CHECK_INTERVAL_MS = 60_000;
 const HEALTH_CHECK_QUERY = "query { __typename }";
+const INTEROP_TRACKING_INTERVAL_MS = 2_000;
 /**
  * Returns an agent implementation for Bloomberg Terminal API.
  * @param logger An optional logger for this agent to use.
@@ -22810,6 +22812,8 @@ async function init(logger) {
         agentLogger?.warn("Failed to get agent configuration", error);
         bbgAPIKey = "";
     }
+    console.log("Initializing Interop tracking for Bloomberg Terminal API agent");
+    await initInteropTracking();
     // Connect to BBG Terminal API here using the bbgAPIKey and set up any necessary state for your agent
     await connectToBBGTerminal(bbgAPIKey);
     startConnectionHealthChecks();
@@ -23043,6 +23047,70 @@ function getConnectionHealthStatus() {
         lastFailedHealthCheckAt,
         checkIntervalMs: HEALTH_CHECK_INTERVAL_MS
     };
+}
+// eslint-disable-next-line jsdoc/require-jsdoc
+async function initInteropTracking() {
+    try {
+        let previousChannelId;
+        // 1. Initial Check using standard FDC3 (Safe for strict brokers)
+        const desktopAgent = window.fdc3;
+        if (desktopAgent) {
+            try {
+                const currentChannel = await desktopAgent.getCurrentChannel();
+                previousChannelId = currentChannel?.id;
+                const color = currentChannel?.displayMetadata?.color;
+                console.log(`[Initial Check] Current channel color: ${color ?? "None"}`);
+                const hasColor = typeof color === "string" && color.toLowerCase() !== "none";
+                localStorage.setItem("enable-BBG-Interop", hasColor ? "true" : "false");
+                if (currentChannel) {
+                    // In FDC3, the channel 'id' corresponds to the OpenFin 'contextGroupId' (e.g., 'red')
+                    console.log(`[Initial Check] Currently joined to channel: ${currentChannel.id}`);
+                    console.log(`[Initial Check] Set enable-BBG-Interop=${hasColor}`);
+                }
+                else {
+                    console.log("[Initial Check] Not currently joined to any channel.");
+                    console.log("[Initial Check] Set enable-BBG-Interop=false");
+                }
+            }
+            catch (fdc3Error) {
+                const errorMessage = fdc3Error instanceof Error ? fdc3Error.message : String(fdc3Error);
+                console.warn("[Initial Check] Could not retrieve current channel via FDC3:", errorMessage);
+            }
+        }
+        else {
+            console.warn("[Initial Check] 'fdc3' global object not found. Ensure FDC3 is enabled in your app manifest.");
+            return;
+        }
+        // 2. Poll current channel changes through FDC3 to avoid broker-specific Interop APIs.
+        if (interopTrackingTimerId) {
+            clearInterval(interopTrackingTimerId);
+        }
+        interopTrackingTimerId = window.setInterval(async () => {
+            try {
+                const currentChannel = await desktopAgent.getCurrentChannel();
+                const currentChannelId = currentChannel?.id;
+                if (currentChannelId !== previousChannelId) {
+                    const color = currentChannel?.displayMetadata?.color;
+                    const hasColor = typeof color === "string" && color.toLowerCase() !== "none";
+                    localStorage.setItem("enable-BBG-Interop", hasColor ? "true" : "false");
+                    console.log(`\n[Event] Context group changed via FDC3 polling!`);
+                    console.log(`Previous Channel: ${previousChannelId ?? "None"}`);
+                    console.log(`Current Channel: ${currentChannelId ?? "None"}`);
+                    console.log(`[Event] Set enable-BBG-Interop=${hasColor}`);
+                    previousChannelId = currentChannelId;
+                }
+            }
+            catch (pollError) {
+                const errorMessage = pollError instanceof Error ? pollError.message : String(pollError);
+                console.warn("[Interop Tracking] Failed to poll current FDC3 channel:", errorMessage);
+            }
+        }, INTEROP_TRACKING_INTERVAL_MS);
+        console.log("Interop tracking successfully initialized.");
+    }
+    catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error("Initialization failed:", errorMessage);
+    }
 }
 
 
