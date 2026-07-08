@@ -6,6 +6,38 @@ let channelClient: OpenFin.ChannelClient | undefined;
 const CONNECTION_STATUS_POLL_MS = 30_000;
 
 /**
+ * Checks to see if local storage has a flag enabled to disable Bloomberg interop.
+ * If the flag is not set, or is set to any value other than "false" (case-insensitive), interop is considered enabled.
+ * @returns true if interop is enabled, false otherwise.
+ */
+function isBbgInteropEnabled(): boolean {
+	const value = window.localStorage.getItem("enable-BBG-Interop");
+	const enabled = value?.toLowerCase() !== "false";
+	console.log(`Bloomberg interop enabled: ${enabled}`);
+	return enabled;
+}
+
+/**
+ * Dispatches an action to the channel if Bloomberg interop is enabled.
+ * @param action - The action to dispatch.
+ * @param payload - The payload to send with the action.
+ * @returns The result of the dispatch, or undefined if interop is disabled.
+ */
+async function dispatchIfInteropEnabled<TPayload extends { [key: string]: unknown }>(
+	action: string,
+	payload: TPayload
+): Promise<unknown> {
+	if (!isBbgInteropEnabled()) {
+		console.log("BBG interop disabled via localStorage flag enable-BBG-Interop=false");
+		return;
+	}
+
+	console.log(`Dispatching action ${action} with payload`, payload);
+
+	return channelClient?.dispatch(action, payload);
+}
+
+/**
  * Connects to a channel with a timeout.
  * @param channelName - The name of the channel to connect to.
  * @param timeoutMs - The timeout in milliseconds.
@@ -26,9 +58,9 @@ async function connectToChannelWithTimeout(
 				resolve(client);
 				return client;
 			})
-			.catch((error) => {
+			.catch((error: unknown) => {
 				window.clearTimeout(timeoutId);
-				reject(error);
+				reject(error instanceof Error ? error : new Error(String(error)));
 			});
 	});
 }
@@ -52,14 +84,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 	}
 
 	desButton.addEventListener("click", async () => {
-		await channelClient?.dispatch("bbg-request", {
+		await dispatchIfInteropEnabled("bbg-request", {
 			mnemonic: "DES",
 			value: "SAND SS Equity"
 		});
 	});
 
 	bioButton.addEventListener("click", async () => {
-		await channelClient?.dispatch("bbg-request", {
+		await dispatchIfInteropEnabled("bbg-request", {
 			mnemonic: "ALLQ",
 			value: "MSFT US Equity",
 			panel: "ONE"
@@ -67,7 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 	});
 
 	gipButton.addEventListener("click", async () => {
-		await channelClient?.dispatch("bbg-request", {
+		await dispatchIfInteropEnabled("bbg-request", {
 			mnemonic: "GP",
 			value: "NVDA US Equity", // "ORCL US Equity",
 			panel: "TWO"
@@ -81,7 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 		console.log(`Sending request with mnemonic: ${mnemonic}, value: ${value}, panel: ${panel}`);
 
-		await channelClient?.dispatch("bbg-request", {
+		await dispatchIfInteropEnabled("bbg-request", {
 			mnemonic,
 			value,
 			panel

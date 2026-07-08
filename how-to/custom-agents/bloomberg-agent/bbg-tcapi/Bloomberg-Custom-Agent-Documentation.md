@@ -1,224 +1,266 @@
-# Bloomberg TCAPI Agent — Developer Documentation
+# Bloomberg TCAPI Agent
 
-## Overview
+## Purpose
 
-The **Bloomberg TCAPI Agent** is an OpenFin custom agent that bridges **HERE Enterprise Browser** and the **Bloomberg Terminal**. It connects to a locally running Bloomberg Terminal via the `@openfin/bloomberg` SDK, registers itself as a Cloud API agent, and exposes an **OpenFin Inter-Application Bus (IAB) channel** so that other applications can trigger Bloomberg Terminal commands programmatically.
+The Bloomberg TCAPI agent is a HERE Enterprise Browser custom agent that connects Enterprise Browser workflows to a locally running Bloomberg Terminal.
 
-### Key capabilities
+At runtime the agent:
 
-- Authenticates with the Bloomberg Terminal using an API key configured in the HERE EB Admin Console.
-- Executes **Bloomberg mnemonics** (e.g. `BIO`, `DES`, `GP`) against specified Terminal panels using GraphQL mutations via the Bloomberg TC API.
-- Monitors connection health every 60 seconds and **automatically reconnects** if the connection drops.
-- Exposes a named IAB channel (`<uuid>/bbg-tcapi`) for client applications to send requests and query health status.
+- registers itself through `@openfin/cloud-api`
+- connects to Bloomberg Terminal through `@openfin/bloomberg`
+- exposes an OpenFin Inter-Application Bus channel named `<agent-uuid>/bbg-tcapi`
+- accepts Bloomberg function requests from client applications
+- polls FDC3 channel membership and writes an interop flag into `localStorage`
+- performs periodic health checks and reconnects when the terminal connection drops
 
----
+This document reflects the current implementation in `client/src`, the current manifest in `public/agent-schema.json`, and the current package scripts in `package.json`.
 
-## Project Structure
+## Current Package Snapshot
 
-```
+- Package name: `here-starter-create-a-search-agent-bloomberg-tcapi`
+- Package version: `11.1.0`
+- Served page: `http://localhost:8181/agent-search-bloomberg-tcapi.html`
+- Bundle output: `public/js/agent-search-bloomberg-tcapi.bundle.js`
+- Agent manifest: `public/agent-schema.json`
+
+## Runtime Prerequisites
+
+- HERE Enterprise Browser access
+- permission to upload a custom agent manifest in the HERE EB Admin Console
+- a locally running Bloomberg Terminal with a signed-in user
+- a Bloomberg API key configured in the `bbgAPIKey` agent setting
+- an OpenFin environment where `window.fin` is available
+- FDC3 support if you want the interop tracking behavior described below
+
+If you are running commands from Windows PowerShell and `npm` is blocked by script execution policy, use `npm.cmd` instead.
+
+## Project Layout
+
+```text
 bbg-tcapi/
-├── client/
-│   └── src/
-│       ├── index.ts              # Entry point — wires up the agent
-│       ├── bloomberg-tcapi.ts    # Core agent logic
-│       └── shapes.ts             # TypeScript interfaces (Logger, BloombergAgentSettings)
-├── public/
-│   ├── agent-schema.json         # Agent manifest for HERE EB Admin Console
-│   └── agent-search-bloomberg-tcapi.html
-└── package.json
+|-- client/
+|   |-- src/
+|   |   |-- bloomberg-tcapi.ts
+|   |   |-- index.ts
+|   |   `-- shapes.ts
+|   |-- tsconfig.json
+|   `-- webpack.config.js
+|-- public/
+|   |-- agent-schema.json
+|   |-- agent-search-bloomberg-tcapi.html
+|   `-- js/
+|       `-- agent-search-bloomberg-tcapi.bundle.js
+|-- Bloomberg-Custom-Agent-Documentation.md
+|-- README.md
+`-- package.json
 ```
-
----
 
 ## Dependencies
 
-| Package | Purpose |
-|---|---|
-| `@openfin/bloomberg` | Bloomberg Terminal Connection API (TC API) |
-| `@openfin/cloud-api` | HERE Cloud Agent registration and configuration |
-| `@openfin/core` | OpenFin runtime (`fin`) — IAB channel, identity |
+### Runtime dependencies
 
----
+- `@finos/fdc3@^2.0.3`: FDC3 desktop agent access used for interop tracking
+- `@openfin/bloomberg@^2.1.0`: Bloomberg Terminal Connection API
+- `@openfin/cloud-api@11.1.0`: HERE agent registration and configuration
+- `@openfin/core@^41.102.4`: OpenFin runtime APIs, including `fin` and IAB
 
-## Module: `shapes.ts`
+### Tooling dependencies
 
-Defines the shared TypeScript interfaces used across the agent.
+The package also uses TypeScript, webpack, ESLint, Prettier, and `markdownlint-cli` for local validation.
 
-### `Logger`
+## NPM Scripts
 
-A generic logging interface injected at runtime. Implementations must provide:
+- `npm run kill`: stops the sample through the shared helper script
+- `npm run client`: opens `http://localhost:8181/agent-search-bloomberg-tcapi.html`
+- `npm run build-client`: builds the browser bundle with webpack
+- `npm run build`: main build entrypoint
+- `npm run start`: serves the static assets from `./public` on port `8181`
+- `npm run setup`: installs dependencies and builds the package
+- `npm run eslint`: lints source files
+- `npm run markdownlint`: lints markdown
+- `npm run validate`: runs Prettier, ESLint, and markdownlint
 
-| Method | Description |
-|---|---|
-| `info(message, ...params)` | Logs informational messages |
-| `error(message, ...params)` | Logs errors |
-| `warn(message, ...params)` | Logs warnings |
-| `trace(message, ...params)` | Logs fine-grained trace output |
-| `debug(message, ...params)` | Logs debug-level detail |
+## Startup Flow
 
-The interface keeps the agent decoupled from any specific logging library. The concrete implementation in `index.ts` delegates to the browser `console.*` methods.
+The entrypoint is `client/src/index.ts`.
 
-### `BloombergAgentSettings`
+1. A `Logger` implementation is created around `console.log`, `console.warn`, `console.error`, `console.trace`, and `console.debug`.
+2. On window `load`, `init()` runs.
+3. `init()` calls `initBBGAgent(logger)` from `client/src/bloomberg-tcapi.ts`.
+4. The agent registers with `Agent.register({})`.
+5. The agent calls `setIsReady(true)` after registration completes.
 
-Typed representation of the agent's configuration as stored in HERE EB Admin Console.
-
-| Field | Type | Description |
-|---|---|---|
-| `bbgAPIKey` | `string` | Bloomberg Terminal API key used for authentication |
-
----
-
-## Module: `index.ts` — Entry Point
-
-This is the **browser entry point** loaded when the agent HTML page is opened inside Enterprise Browser.
-
-### Startup sequence
-
-1. A concrete `Logger` implementation is constructed that wraps `console.log/error/warn/trace/debug`.
-2. The `load` DOM event triggers `init()`.
-3. `init()` calls `initBBGAgent(logger)` from `bloomberg-tcapi.ts`.
-4. After the Bloomberg agent is set up, `Agent.register({})` registers this window as a HERE Cloud Agent.
-5. `bloombergAgent.setIsReady(true)` signals to HERE EB that the agent is ready to serve.
-
-```
+```text
 window load
-  └─ init()
-       ├─ initBBGAgent(logger)   ← bloomberg-tcapi.ts
-       ├─ Agent.register({})
-       └─ bloombergAgent.setIsReady(true)
+`-- init()
+    |-- initBBGAgent(logger)
+    |-- Agent.register({})
+    `-- bloombergAgent.setIsReady(true)
 ```
 
----
+If initialization throws, the error is logged and the agent is not marked ready.
 
-## Module: `bloomberg-tcapi.ts` — Core Agent Logic
+## Core Module State
 
-This module contains all Bloomberg Terminal interaction logic. It is **stateful** — module-level variables track connection objects, health state, and timers.
+The main implementation lives in `client/src/bloomberg-tcapi.ts`.
 
-### Module-level State
+The module keeps process-wide state for:
 
-| Variable | Type | Purpose |
-|---|---|---|
-| `agentLogger` | `Logger \| undefined` | Injected logger instance |
-| `bbgChannel` | `OpenFin.ChannelProvider \| undefined` | The IAB channel for client communication |
-| `bbgConnection` | `BloombergConnection \| undefined` | Active Bloomberg Terminal connection |
-| `healthCheckTimerId` | `number \| undefined` | Timer ID for the periodic health check interval |
-| `healthCheckInProgress` | `boolean` | Guard flag preventing concurrent health checks |
-| `reconnectInProgress` | `boolean` | Guard flag preventing concurrent reconnection attempts |
-| `currentApiKey` | `string` | Stored API key used during reconnection |
-| `isConnectionHealthy` | `boolean` | Last known health state of the BBG connection |
-| `lastSuccessfulHealthCheckAt` | `string \| undefined` | ISO timestamp of last passing health check |
-| `lastFailedHealthCheckAt` | `string \| undefined` | ISO timestamp of last failing health check |
+- the injected logger
+- the OpenFin channel provider
+- the active Bloomberg connection
+- the health-check interval ID
+- the FDC3 interop polling interval ID
+- reconnect and health-check guard flags
+- the last configured API key
+- the last known connection status and timestamps
 
-### Constants
+### Important constants
 
-| Constant | Value | Description |
-|---|---|---|
-| `HEALTH_CHECK_INTERVAL_MS` | `60_000` | Milliseconds between each health check (60 seconds) |
-| `HEALTH_CHECK_QUERY` | `"query { __typename }"` | Lightweight GraphQL introspection probe used as a ping |
+- `HEALTH_CHECK_INTERVAL_MS = 60000`
+- `HEALTH_CHECK_QUERY = "query { __typename }"`
+- `INTEROP_TRACKING_INTERVAL_MS = 2000`
 
----
+## Configuration
 
-### Method: `init(logger?)`
+The agent reads configuration through `Agent.getConfiguration<BloombergAgentSettings>()`.
 
-**Signature:** `async function init(logger?: Logger): Promise<void>`
+Supported configuration fields:
 
-The public entry point for the Bloomberg agent. Called by `index.ts` after the page loads.
+- `bbgAPIKey: string`
 
-**Step-by-step:**
+If configuration lookup fails, the agent logs a warning and continues with an empty API key.
 
-1. Stores the optional `logger` in the `agentLogger` module variable.
-2. Calls `Agent.getConfiguration<BloombergAgentSettings>()` to retrieve the `bbgAPIKey` configured in the HERE EB Admin Console.
-3. If configuration retrieval fails, logs a warning and falls back to an empty API key string.
-4. Calls `connectToBBGTerminal(bbgAPIKey)` to establish the initial Bloomberg Terminal connection.
-5. Calls `startConnectionHealthChecks()` to begin the 60-second periodic health monitoring loop.
-6. Calls `createBBGChannel()` to create the OpenFin IAB channel.
-7. Calls `registerBBGMessageAction()` to attach message handlers to the channel.
+## Bloomberg Connection Lifecycle
 
----
+### Initial connection
 
-### Method: `connectToBBGTerminal(bbgAPIKey)`
+During initialization the agent:
 
-**Signature:** `async function connectToBBGTerminal(bbgAPIKey: string): Promise<void>`
+1. stores the configured API key in module state
+2. enables SDK logging through `enableLogging()`
+3. attempts `connect(bbgAPIKey)`
 
-Establishes the connection to the Bloomberg Terminal.
+Retry behavior:
 
-**Step-by-step:**
+- if the failure is a `TerminalConnectionError`, the agent waits 30 seconds and retries indefinitely
+- if the failure is another error type, the error is logged as unrecoverable for that attempt
 
-1. Stores `bbgAPIKey` in the module-level `currentApiKey` (used later for reconnection).
-2. Calls `enableLogging()` from the `@openfin/bloomberg` SDK to activate SDK-level diagnostic logging.
-3. Enters a **retry loop** (`while (true)`):
-   - Attempts `connect(bbgAPIKey)` — the Bloomberg SDK establishes a connection to the locally running Terminal process.
-   - **On success:** stores the returned `BloombergConnection` in `bbgConnection`, sets `isConnectionHealthy = true`, records `lastSuccessfulHealthCheckAt`, then returns.
-   - **On `TerminalConnectionError`:** logs a warning and waits 30 seconds before retrying. This error indicates the Terminal is not yet reachable (e.g. still starting up).
-   - **On any other error type:** logs the error and re-throws immediately — these are unrecoverable errors (e.g. invalid API key format).
-4. Wraps the entire loop in a `try/catch` to log and absorb unexpected errors without crashing the agent.
+On successful connection the agent:
 
-> **Note:** The retry loop only exits on a successful connection or a non-`TerminalConnectionError`. This means the agent will keep trying until the Bloomberg Terminal is available.
+- stores the `BloombergConnection`
+- sets `isConnectionHealthy` to `true`
+- updates `lastSuccessfulHealthCheckAt`
 
----
+### Health monitoring
 
-### Method: `createBBGChannel()`
+After the first connection attempt, the agent starts a repeating health check every 60 seconds.
 
-**Signature:** `async function createBBGChannel(): Promise<void>`
+Each cycle:
 
-Creates the named OpenFin IAB channel through which client applications send Bloomberg commands.
+1. skips if a health check is already running
+2. calls `verifyConnectionHealth()`
+3. sends `query { __typename }` through `executeApiRequest(..., "local")`
+4. marks the connection healthy on success
+5. clears the connection object and marks the connection unhealthy on failure
+6. triggers `reconnectToBBGTerminal()` when unhealthy
 
-**Step-by-step:**
+### Reconnection
 
-1. If `bbgChannel` already exists, returns immediately (idempotent).
-2. Verifies that `window.fin` is available — if not, logs an error and returns. This check ensures the agent is running inside an OpenFin environment.
-3. Calls `fin.InterApplicationBus.Channel.create(...)` with the channel name `<uuid>/bbg-tcapi`, where `<uuid>` is the OpenFin identity UUID of the agent window.
-4. Stores the resulting `ChannelProvider` in the module-level `bbgChannel`.
+Reconnection is guarded so only one reconnect attempt can run at a time. The reconnect path reuses the stored API key and calls the same connection routine used at startup.
 
-> The channel name is scoped to the agent's UUID to avoid naming conflicts in multi-agent deployments.
+## FDC3 Interop Tracking
 
----
+The current implementation contains behavior that is not documented in the local package README.
 
-### Method: `registerBBGMessageAction()`
+Before connecting to Bloomberg, the agent calls `initInteropTracking()`.
 
-**Signature:** `function registerBBGMessageAction(): void`
+That routine:
 
-Attaches message action handlers to the IAB channel.
+1. reads `window.fdc3`
+2. attempts `getCurrentChannel()`
+3. inspects `currentChannel.displayMetadata.color`
+4. writes `enable-BBG-Interop` to `localStorage`
+5. starts polling every 2 seconds for FDC3 channel changes
+6. rewrites `enable-BBG-Interop` whenever the current channel changes
 
-**Step-by-step:**
+### Local storage contract
 
-1. Verifies `bbgChannel` exists. If not, logs an error.
-2. Registers the **`bbg-request`** action:
-   - Receives a payload of `{ mnemonic: string, value: string, panel?: string }` from the client.
-   - Logs the received payload and sender identity.
-   - Calls `sendToBBGTerminal(mnemonic, value, panel ?? "ZERO")` to forward the command to the Terminal.
-3. Registers the **`bbg-health`** action:
-   - Calls `getConnectionHealthStatus()` to build the health status object.
-   - Returns it to the calling client — clients can use this to display connection diagnostics.
+- key `enable-BBG-Interop` is set to `true` when the current FDC3 channel has a non-`none` color
+- key `enable-BBG-Interop` is set to `false` when there is no current channel, no color, or the color resolves to `none`
 
-> Clients connect to `<agentUUID>/bbg-tcapi` and dispatch these named actions using the OpenFin IAB client API.
+This is implemented as polling rather than an event-driven subscription so it remains compatible with stricter broker environments.
 
----
+## OpenFin Channel Contract
 
-### Method: `sendToBBGTerminal(mnemonic, value, panel)`
+The agent creates a channel named `<fin.me.identity.uuid>/bbg-tcapi`.
 
-**Signature:** `async function sendToBBGTerminal(mnemonic: string, value: unknown, panel: string): Promise<void>`
+The UUID scoping prevents collisions when multiple agent windows are present.
 
-Executes a Bloomberg mnemonic command via the TC API's GraphQL interface.
+### Registered actions
 
-**Step-by-step:**
+- `bbg-request`: sends a Bloomberg function request to Terminal
+- `bbg-health`: returns the agent's current connection health snapshot
 
-1. Checks that `bbgConnection` exists. If not, marks `isConnectionHealthy = false` and returns.
-2. Constructs a **GraphQL mutation string** depending on the mnemonic:
-   - If `mnemonic === "BIO"`: builds a mutation that calls `runFunctionInPanel` with only `mnemonic` and `panel: ZERO`. BIO is a user-lookup function that does not take a security argument.
-   - For all other mnemonics: builds a mutation that includes `mnemonic`, `panel`, and `security1: "<value>"` — the security or instrument identifier to display in the Terminal panel.
-3. Calls `bbgConnection.executeApiRequest(queryStr, "local")` to send the mutation to the Bloomberg TC API gateway running locally.
-4. **On success:** sets `isConnectionHealthy = true` and records `lastSuccessfulHealthCheckAt`.
-5. **On error:** sets `isConnectionHealthy = false`, records `lastFailedHealthCheckAt`, and logs the error. Does not re-throw — the channel response is fire-and-forget.
+### `bbg-request` payload
 
-#### GraphQL Mutation shape (general case)
+```ts
+{
+  mnemonic: string;
+  value: string;
+  panel?: string;
+}
+```
+
+Behavior:
+
+- `panel` defaults to `ZERO`
+- the agent logs the inbound payload and sender
+- the request is forwarded to `sendToBBGTerminal(...)`
+- the handler does not return a structured success payload
+
+### `bbg-health` response
+
+```ts
+{
+  isConnected: boolean;
+  hasConnectionObject: boolean;
+  lastSuccessfulHealthCheckAt?: string;
+  lastFailedHealthCheckAt?: string;
+  checkIntervalMs: number;
+}
+```
+
+## Bloomberg Request Execution
+
+`sendToBBGTerminal(mnemonic, value, panel)` builds a GraphQL mutation and executes it through the Bloomberg connection with target `local`.
+
+### Special case: `BIO`
+
+If `mnemonic === "BIO"`, the current implementation always sends:
+
+- `mnemonic: "BIO"`
+- `panel: ZERO`
+- no `security1` field
+
+That means the inbound `panel` value is ignored for `BIO` in the current implementation.
+
+### General case
+
+For any other mnemonic, the request includes:
+
+- `mnemonic`
+- `panel`
+- `security1: value`
+
+Representative mutation shape:
 
 ```graphql
 mutation {
   runFunctionInPanel(input: {
-    mnemonic: "<mnemonic>",
-    panel: <ZERO|ONE|TWO|THREE|FOUR>,
-    security1: "<value>"
+    mnemonic: "DES",
+    panel: ZERO,
+    security1: "AAPL US Equity"
   }) {
     ... on Result {
       succeeded
@@ -232,152 +274,97 @@ mutation {
 }
 ```
 
----
+On successful execution the agent updates health state and logs the Bloomberg response. On failure it marks the connection unhealthy, timestamps the failure, and logs the error.
 
-### Method: `startConnectionHealthChecks()`
+## Agent Manifest
 
-**Signature:** `function startConnectionHealthChecks(): void`
+The current `public/agent-schema.json` contains:
 
-Starts a repeating timer that verifies the Bloomberg connection is still alive.
+- `$schema: https://resources.here.io/schemas/agents/v1.0/custom-agent.json`
+- `type: custom`
+- `version: 1.0`
+- `url: http://localhost:8181/agent-search-bloomberg-tcapi.html`
+- `title: Bloomberg TCAPI Agent`
+- `description: An example agent that uses Bloomberg TCAPI to communicate with the Terminal`
+- `features.interop.fdc3Version: 2.0`
 
-**Step-by-step:**
+The manifest exposes one configuration field:
 
-1. If a previous timer exists (`healthCheckTimerId`), clears it first to avoid duplicate intervals.
-2. Calls `window.setInterval(...)` with an interval of `HEALTH_CHECK_INTERVAL_MS` (60 seconds).
-3. On each tick:
-   - Skips the check if `healthCheckInProgress` is `true` (prevents overlapping checks).
-   - Sets `healthCheckInProgress = true`.
-   - Calls `verifyConnectionHealth()`.
-   - If the check returns `false`, calls `reconnectToBBGTerminal()`.
-   - Resets `healthCheckInProgress = false` in the `finally` block.
-
----
-
-### Method: `verifyConnectionHealth()`
-
-**Signature:** `async function verifyConnectionHealth(): Promise<boolean>`
-
-Sends a lightweight GraphQL introspection query to confirm the Bloomberg connection is responsive.
-
-**Step-by-step:**
-
-1. If `bbgConnection` is `undefined`, marks the connection unhealthy, records `lastFailedHealthCheckAt`, logs a warning, and returns `false`.
-2. Calls `bbgConnection.executeApiRequest(HEALTH_CHECK_QUERY, "local")` with the probe query `query { __typename }`. This is the smallest valid GraphQL query and causes no side effects on the Terminal.
-3. **On success:** marks `isConnectionHealthy = true`, records `lastSuccessfulHealthCheckAt`, logs debug info, and returns `true`.
-4. **On error:** marks `isConnectionHealthy = false`, records `lastFailedHealthCheckAt`, sets `bbgConnection = undefined` (forces full reconnection), logs a warning, and returns `false`.
-
----
-
-### Method: `reconnectToBBGTerminal()`
-
-**Signature:** `async function reconnectToBBGTerminal(): Promise<void>`
-
-Attempts to restore a dropped Bloomberg Terminal connection.
-
-**Step-by-step:**
-
-1. Guards against concurrent reconnection attempts using the `reconnectInProgress` flag.
-2. Guards against reconnection without a stored API key (`currentApiKey`).
-3. Sets `reconnectInProgress = true`.
-4. Calls `connectToBBGTerminal(currentApiKey)` to re-establish the connection using the same API key retrieved during `init()`.
-5. Logs any errors without re-throwing.
-6. Resets `reconnectInProgress = false` in the `finally` block.
-
----
-
-### Method: `getConnectionHealthStatus()`
-
-**Signature:** `function getConnectionHealthStatus(): { isConnected, hasConnectionObject, lastSuccessfulHealthCheckAt?, lastFailedHealthCheckAt?, checkIntervalMs }`
-
-Returns a snapshot of the current connection health state. Called in response to `bbg-health` channel requests.
-
-**Returns:**
-
-| Field | Type | Description |
-|---|---|---|
-| `isConnected` | `boolean` | Whether the last health check or API call succeeded |
-| `hasConnectionObject` | `boolean` | Whether a `BloombergConnection` object currently exists |
-| `lastSuccessfulHealthCheckAt` | `string \| undefined` | ISO 8601 timestamp of the last successful check |
-| `lastFailedHealthCheckAt` | `string \| undefined` | ISO 8601 timestamp of the last failed check |
-| `checkIntervalMs` | `number` | The configured health check interval (always 60,000) |
-
----
-
-## Agent Schema (`agent-schema.json`)
-
-The manifest uploaded to HERE EB Admin Console that registers this agent:
-
-| Field | Value |
-|---|---|
-| `type` | `custom` |
-| `url` | `http://localhost:8181/agent-search-bloomberg-tcapi.html` |
-| `title` | Bloomberg TCAPI Agent |
-| `features.interop.fdc3Version` | `2.0` |
-| Configuration field | `bbgAPIKey` — admin-entered Bloomberg API key |
-
----
-
-## IAB Channel Protocol
-
-Client applications (see `bbg-tcapi-client`) connect to the channel `<agentUUID>/bbg-tcapi` and dispatch the following actions:
-
-### `bbg-request`
-
-**Payload:**
-
-```ts
-{
-  mnemonic: string;   // Bloomberg function mnemonic, e.g. "DES", "GP", "BIO"
-  value: string;      // Security/instrument identifier, e.g. "AAPL US Equity"
-  panel?: string;     // Target Terminal panel: "ZERO" | "ONE" | "TWO" | "THREE" | "FOUR"
-                      // Defaults to "ZERO" if omitted
-}
+```json
+[
+  {
+    "name": "bbgAPIKey",
+    "title": "Bloomberg API Key",
+    "placeholder": "Enter your Bloomberg API key"
+  }
+]
 ```
 
-**Response:** none (fire-and-forget).
+## Served Assets
 
-### `bbg-health`
+The page served to Enterprise Browser is `public/agent-search-bloomberg-tcapi.html`.
 
-**Payload:** none.
+That page:
 
-**Response:** the `getConnectionHealthStatus()` object (see above).
+- loads `./common/style/app.css`
+- loads `./js/agent-search-bloomberg-tcapi.bundle.js` as an ES module
+- renders a simple `Please wait...` placeholder while the agent initializes
 
----
+## Local Development
 
-## Connection Lifecycle
-
-```
-init()
-  │
-  ├─ connectToBBGTerminal()  ──(retry every 30s on TerminalConnectionError)──►  bbgConnection established
-  │
-  ├─ startConnectionHealthChecks()  ──(every 60s)──►  verifyConnectionHealth()
-  │                                                        │
-  │                                                    unhealthy?
-  │                                                        │
-  │                                                    reconnectToBBGTerminal()
-  │                                                        └─► connectToBBGTerminal()
-  │
-  ├─ createBBGChannel()  ──►  IAB channel "<uuid>/bbg-tcapi" ready
-  │
-  └─ registerBBGMessageAction()
-         ├─ "bbg-request"  ──►  sendToBBGTerminal(mnemonic, value, panel)
-         └─ "bbg-health"   ──►  getConnectionHealthStatus()
-```
-
----
-
-## Running Locally
+### Install and build
 
 ```shell
-# Install dependencies
 npm install
-
-# Build the TypeScript client
 npm run build
+```
 
-# Serve on http://localhost:8181
+If PowerShell blocks `npm`, use:
+
+```shell
+npm.cmd install
+npm.cmd run build
+```
+
+### Start the static server
+
+```shell
 npm run start
 ```
 
-Ensure the Bloomberg Terminal is running and a user is logged in before starting the agent. Upload `public/agent-schema.json` to the HERE EB Admin Console and add an application entry pointing to `http://localhost:8181/agent-search-bloomberg-tcapi.html`.
+This serves the `public` folder on `http://localhost:8181` with caching disabled.
+
+### Optional helper launch
+
+```shell
+npm run client
+```
+
+This uses the shared launch script to open the sample page URL.
+
+### Validation
+
+```shell
+npm run validate
+```
+
+## HERE Admin Setup
+
+1. Build and serve the sample locally.
+2. Upload `public/agent-schema.json` in the HERE EB Admin Console.
+3. Ensure the uploaded agent points to `http://localhost:8181/agent-search-bloomberg-tcapi.html`.
+4. Create or update an application entry with permission to access that URL.
+5. Set the `bbgAPIKey` configuration value in the custom agent configuration.
+6. Launch the agent inside Enterprise Browser.
+
+## Operational Notes
+
+- The IAB channel is only created when `window.fin` is available.
+- If Bloomberg is not connected yet, `bbg-request` calls are logged and dropped rather than queued.
+- `bbg-health` is the only built-in diagnostics endpoint exposed over the channel.
+- FDC3 interop tracking depends on `window.fdc3`; if FDC3 is absent, the agent logs a warning and skips that behavior.
+- The current implementation does not expose a teardown path for the polling timers.
+
+## Related Sample
+
+The companion client sample for sending `bbg-request` messages lives alongside this package in the repository under the `bbg-tcapi-client` folder.
