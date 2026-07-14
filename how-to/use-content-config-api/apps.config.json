@@ -1,0 +1,20 @@
+{
+  "applications": [
+    {
+      "appId": "here-io",
+      "name": "HERE",
+      "title": "HERE",
+      "description": "Demo app added via the Content Configuration API.",
+      "type": "web",
+      "details": { "url": "https://www.here.io/" },
+      "icons": [{ "src": "https://www.here.io/favicon.ico" }],
+      "hostManifests": {
+        "here": {
+          "active": true,
+          "featured": false,
+          "environmentAvailability": { "enableHereEB": true, "enableHereZero": false, "enableHereMobile": false }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Content Configuration API</title>
+		<link rel="icon" type="image/x-icon" href="./favicon.ico" />
+		<link rel="stylesheet" href="./styles/app.css" />
+		<script src="./js/app.bundle.js"></script>
+	</head>
+
+	<body class="col gap20">
+		<header class="row spread middle">
+			<div class="col">
+				<h1>Content Configuration API</h1>
+				<div class="subtitle">
+					Create, read, update and delete apps
+				</div>
+			</div>
+			<div class="row middle gap10">
+				<span class="endpoint">POST&nbsp;<b id="endpoint">/here/api/graphql</b></span>
+				<img src="./images/icon-blue.png" alt="HERE" height="36" />
+			</div>
+		</header>
+
+		<main class="console">
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__title">App definition</span>
+					<button id="btnList">List all apps</button>
+				</div>
+				<div class="panel__body">
+					<div class="editor">
+						<div class="field">
+							<label for="f-contentId">Content ID</label>
+							<input id="f-contentId" type="text" value="here-io" autocomplete="off" spellcheck="false" />
+							<span class="field__hint">Unique in your org — letters, numbers, hyphens</span>
+						</div>
+						<div class="field">
+							<label for="f-name">Name</label>
+							<input id="f-name" type="text" value="HERE" autocomplete="off" />
+						</div>
+						<div class="field">
+							<label for="f-type">Type</label>
+							<select id="f-type">
+								<option value="web">Web</option>
+								<option value="native">Desktop</option>
+							</select>
+						</div>
+						<div class="field" id="field-url">
+							<label for="f-url">URL</label>
+							<input id="f-url" type="url" value="https://www.here.io/" autocomplete="off" spellcheck="false" />
+						</div>
+						<div class="field hidden" id="field-path">
+							<label for="f-path">Executable path</label>
+							<input id="f-path" type="text" value="C:\Program Files\App\app.exe" autocomplete="off" spellcheck="false" />
+						</div>
+						<div class="field">
+							<label for="f-icon">Icon URL</label>
+							<input id="f-icon" type="url" value="https://www.here.io/favicon.ico" autocomplete="off" spellcheck="false" />
+							<span class="field__hint">Optional</span>
+						</div>
+						<div class="checks">
+							<div class="check">
+								<input id="f-active" type="checkbox" checked />
+								<label for="f-active">Active</label>
+							</div>
+							<div class="check">
+								<input id="f-featured" type="checkbox" />
+								<label for="f-featured">Featured</label>
+							</div>
+						</div>
+
+						<hr class="divider" />
+
+						<div class="actions">
+							<button id="btnCreate">Create</button>
+							<button id="btnValidate" class="secondary">Validate</button>
+							<button id="btnUpdate" class="secondary">Update</button>
+							<button id="btnDelete" class="secondary">Delete</button>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__title">Activity</span>
+					<button id="btnClear" class="plain small">Clear</button>
+				</div>
+				<div class="panel__body">
+					<div id="log" class="log">
+						<div class="log__empty" id="logEmpty">Requests and their responses appear here.</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>

@@ -2,6 +2,7 @@ node_modules
 build
 out
 .DS_STORE
+.idea
 # Bundle/builds
 **/*.bundle.js
 **/*.bundle.js.map

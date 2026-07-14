@@ -1,0 +1,26 @@
+{
+	"name": "here-starter-content-config-api",
+	"version": "1.0.0",
+	"description": "A sample showing how to use the HERE Content Configuration API (GraphQL queries and mutations).",
+	"scripts": {
+		"build-client": "webpack build --config ./client/webpack.config.js --mode=development",
+		"build": "npm run build-client",
+		"start": "npm run build && npx --yes http-server ./public -p 8282 -c-1",
+		"sync": "tsx script/sync.ts",
+		"setup": "npm install && npm run build"
+	},
+	"engines": {
+		"node": ">=20.12"
+	},
+	"keywords": [],
+	"license": "SEE LICENSE IN LICENSE.MD",
+	"dependencies": {},
+	"devDependencies": {
+		"@types/node": "^22.10.1",
+		"ts-loader": "^9.5.1",
+		"tsx": "^4.19.2",
+		"typescript": "^5.4.2",
+		"webpack": "^5.90.3",
+		"webpack-cli": "^5.1.4"
+	}
+}
