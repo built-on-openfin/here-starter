@@ -23,7 +23,8 @@
   ],
   "packageExclude": [
     "how-to/use-notifications-service",
-    "how-to/use-the-entitlements-api"
+    "how-to/use-the-entitlements-api",
+    "how-to/use-content-config-api"
   ],
   "packageCustomFolder": "",
   "contributors": [

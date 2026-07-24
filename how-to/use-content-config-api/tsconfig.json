@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"target": "ES2021",
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"lib": ["ES2021", "DOM"],
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"sourceMap": true,
+		"resolveJsonModule": true,
+		"types": ["node"]
+	},
+	"include": ["shared/**/*.ts", "client/**/*.ts", "script/**/*.ts"]
+}

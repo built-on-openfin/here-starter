@@ -1,0 +1,4 @@
+package-lock.json
+*.bundle.js
+public/js
+node_modules
