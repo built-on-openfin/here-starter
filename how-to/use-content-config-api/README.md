@@ -49,6 +49,14 @@ so use a short-lived token and serve the sample only to people you would trust w
 request fails with `400` or `401`, the token or its `x-of-auth-id` did not match a configured auth
 provider — check them with your HERE administrator.
 
+**Coming soon: server-to-server OAuth.** Because auth is a pluggable `CredentialProvider`, adding a
+new scheme is a drop-in. `shared/src/auth.ts` includes `OAuthClientCredentialsAuth`, a standard
+OAuth 2.0 client-credentials provider (exchange a client id and secret for a short-lived token,
+cache it, send it as a bearer token). It is a forward-looking example — the API does not accept
+OAuth tokens yet, so nothing here wires it up — and, because the client secret must stay server
+side, it is for the script/CI only, never the browser bundle. When OAuth lands you switch to it by
+constructing that provider instead of `JwtAuth`; no CRUD code changes.
+
 ## Setup
 
 ```shell

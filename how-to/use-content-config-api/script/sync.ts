@@ -104,6 +104,8 @@ function resolveAuth(): CredentialProvider | undefined {
 		return new CookieHeaderAuth(session);
 	}
 
+	// Coming soon: when the API accepts OAuth tokens, add a branch here for
+	// HERE_OAUTH_* returning `new OAuthClientCredentialsAuth({ ... })`.
 	return undefined;
 }
 
