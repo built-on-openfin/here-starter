@@ -65,7 +65,10 @@ The browser UI needs an OAuth app registered in your organization.
    run `npm run start` first and open the page: it prints the exact string to register in the
    Activity panel. That works before you have configured anything, so you can do it now and come
    back with the value.
-5. Save, and copy the **client id** into `HERE_OAUTH_CLIENT_ID` in your `.env`.
+5. Set the **client type** to **public**, if your admin console offers the choice. A browser app is
+   a public client: it holds no client secret, and PKCE protects the flow instead. Do not create a
+   client secret for it — one is neither needed nor safe here.
+6. Save, and copy the **client id** into `HERE_OAUTH_CLIENT_ID` in your `.env`.
 
 Registration comes first and configuration second: the client id does not exist until the app is
 registered, and registering needs the redirect URI. The sample is runnable at every stage of that
@@ -73,6 +76,13 @@ sequence, so nothing is circular.
 
 The client id is **not** a secret — it is public by design. A browser app needs no client secret at
 all; see below.
+
+**If you don't see a client type option**, your deployment may only support confidential clients —
+those that authenticate with a secret. Check the discovery document: if
+`token_endpoint_auth_methods_supported` does not include `none`, the token endpoint will require a
+`client_secret`, and the exchange at the end of the flow will fail for a browser app. Ask your HERE
+administrator about public client support rather than embedding a secret in the page. Everything up
+to the exchange still works, and this sample needs no changes once public clients are available.
 
 ## How the OAuth flow works
 
@@ -210,6 +220,7 @@ tools → Application → Cookies → copy the `here-session` value.
 | `access_denied` after the consent screen | The user declined consent, or lacks access to the app |
 | "The returned state did not match" | A stale, replayed, or bookmarked redirect. Start sign-in again from the page |
 | Token exchange fails with an invalid-client error | The client id is wrong, or the app is not registered in this org |
+| Token exchange fails mentioning a **client secret** | The app is registered as a confidential client, or the deployment does not support public clients. Re-register it as public; see "Registering an OAuth app". Do not put a secret in the page |
 | `401` on an API call after signing in successfully | The access token expired. Sign in again |
 | `403` on writes | The signed-in user lacks content admin access in this org |
 | The script reports no credential | Set `HERE_API_JWT` (or `HERE_SESSION`) in `.env` — the script cannot use OAuth |
