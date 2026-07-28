@@ -1,25 +1,25 @@
-import { JwtAuth } from "../../shared/src/auth";
+import { BearerTokenAuth } from "../../shared/src/auth";
 import { ContentApiClient } from "../../shared/src/content-api";
 import { ContentApiError } from "../../shared/src/errors";
 import { fdc3ToContentInput } from "../../shared/src/fdc3-mapping";
+import {
+	beginSignIn,
+	completeSignIn,
+	hasAuthorizationResponse,
+	OAuthError,
+	redirectUri
+} from "../../shared/src/oauth-pkce";
 import type { ContentNode, ContentUpdate, Fdc3Application } from "../../shared/src/types";
 
 /**
  * Injected at build time by webpack from `.env` — see `.env.example`.
  *
- * The UI authenticates with an API JWT (bearer token), not the session cookie:
- * a page served from a different origin than your HERE org cannot send the
- * cookie (the API allows `Access-Control-Allow-Origin: *`, which browsers reject
- * for credentialed requests), whereas a bearer token rides in a plain header
- * that the API's CORS policy permits.
- *
- * Note this bakes the token into the bundle, readable by anyone who can load
- * the page. Use a short-lived token, and serve this sample only to people you
- * would trust with it.
+ * Neither value is a secret. The client id is public by design, and the UI has
+ * no token until the user signs in through HERE, so nothing sensitive is
+ * readable in this bundle.
  */
 const BASE_URL = process.env.BASE_URL ?? "";
-const API_JWT = process.env.HERE_API_JWT ?? "";
-const AUTH_ID = process.env.HERE_AUTH_ID ?? "";
+const CLIENT_ID = process.env.HERE_OAUTH_CLIENT_ID ?? "";
 
 /** Every request — read or write — goes to this one endpoint. */
 const ENDPOINT_PATH = "/here/api/graphql";
@@ -37,13 +37,37 @@ interface FormState {
 }
 
 function initializeDOM(): void {
-	const client = new ContentApiClient({
-		baseUrl: BASE_URL,
-		// AUTH_ID is optional — only needed when the org has several JWT providers.
-		auth: new JwtAuth(API_JWT, AUTH_ID === "" ? undefined : AUTH_ID)
-	});
+	// Held in memory only, so closing or reloading the page ends the session.
+	// There is no refresh grant, so an expired token means signing in again.
+	let client: ContentApiClient | undefined;
 
 	const logEl = document.querySelector<HTMLElement>("#log");
+
+	// --- sign-in state ------------------------------------------------------
+
+	const ACTION_IDS = ["#btnList", "#btnCreate", "#btnValidate", "#btnUpdate", "#btnDelete"];
+
+	function setSignedIn(token: string | undefined): void {
+		client =
+			token === undefined
+				? undefined
+				: new ContentApiClient({ baseUrl: BASE_URL, auth: new BearerTokenAuth(token) });
+
+		for (const id of ACTION_IDS) {
+			const button = document.querySelector<HTMLButtonElement>(id);
+			if (button !== null) {
+				button.disabled = token === undefined;
+			}
+		}
+		document.querySelector("#btnSignIn")?.classList.toggle("hidden", token !== undefined);
+		document.querySelector("#authState")?.classList.toggle("hidden", token === undefined);
+	}
+
+	/** Report an OAuth failure in the transcript and return to signed out. */
+	function failSignIn(err: unknown): void {
+		notice(err instanceof OAuthError ? err.message : String(err), "error");
+		setSignedIn(undefined);
+	}
 
 	// --- reading and building from the form ---------------------------------
 
@@ -193,14 +217,14 @@ function initializeDOM(): void {
 		if (BASE_URL === "") {
 			missing.push("BASE_URL");
 		}
-		if (API_JWT === "") {
-			missing.push("HERE_API_JWT");
+		if (CLIENT_ID === "") {
+			missing.push("HERE_OAUTH_CLIENT_ID");
 		}
 		if (missing.length > 0) {
 			notice(
-				`${missing.join(" and ")} not set in .env. Add them and re-run npm run start to ` +
-					"rebuild. The browser UI needs a bearer token (HERE_API_JWT) — a session cookie " +
-					"can't be sent cross-origin.",
+				`${missing.join(" and ")} not set in .env. Add ${missing.length === 1 ? "it" : "them"} ` +
+					"and re-run npm run start to rebuild. See the README for how to register an " +
+					"OAuth app and get a client id.",
 				"error"
 			);
 			return false;
@@ -208,16 +232,31 @@ function initializeDOM(): void {
 		return true;
 	}
 
-	/** Run one API call, logging the request and resolving it to OK or error. */
-	async function run(label: string, call: () => Promise<string[]>): Promise<void> {
-		if (!configured()) {
+	/**
+	 * Run one API call, logging the request and resolving it to OK or error.
+	 *
+	 * The client is handed to the callback rather than read from the closure, so
+	 * the signed-in check happens in one place and callers get a non-optional
+	 * client to work with.
+	 */
+	async function run(
+		label: string,
+		call: (api: ContentApiClient) => Promise<string[]>
+	): Promise<void> {
+		if (client === undefined) {
+			notice("Sign in first.", "error");
 			return;
 		}
 		const settle = logRequest(label);
 		try {
-			settle("ok", await call());
+			settle("ok", await call(client));
 		} catch (err) {
 			settle("error", [err instanceof ContentApiError ? err.message : String(err)]);
+			// No refresh grant exists, so an expired token ends the session.
+			if (err instanceof ContentApiError && err.status === 401) {
+				setSignedIn(undefined);
+				notice("Session expired. Sign in again to continue.", "error");
+			}
 		}
 	}
 
@@ -227,11 +266,24 @@ function initializeDOM(): void {
 		document.querySelector("#field-path")?.classList.toggle("hidden", isWeb);
 	}
 
+	document.querySelector("#btnSignIn")?.addEventListener("click", () => {
+		if (!configured()) {
+			return;
+		}
+		// Navigates away on success, so nothing after this runs.
+		beginSignIn(BASE_URL, CLIENT_ID).catch(failSignIn);
+	});
+
+	document.querySelector("#btnSignOut")?.addEventListener("click", () => {
+		setSignedIn(undefined);
+		notice("Signed out.", "info");
+	});
+
 	document.querySelector("#f-type")?.addEventListener("change", applyTypeVisibility);
 
 	document.querySelector("#btnList")?.addEventListener("click", () => {
-		void run("query contents", async () => {
-			const nodes = await client.listContents();
+		void run("query contents", async (api) => {
+			const nodes = await api.listContents();
 			if (nodes.length === 0) {
 				return ["Your directory has no apps yet."];
 			}
@@ -244,8 +296,8 @@ function initializeDOM(): void {
 
 	document.querySelector("#btnCreate")?.addEventListener("click", () => {
 		const form = readForm();
-		void run(`mutation createContent · ${form.contentId || "?"}`, async () => {
-			const result = await client.createContent(fdc3ToContentInput(buildApp(form)));
+		void run(`mutation createContent · ${form.contentId || "?"}`, async (api) => {
+			const result = await api.createContent(fdc3ToContentInput(buildApp(form)));
 			return [
 				`Created "${result.id}" (uuid ${result.uuid})`,
 				`${result.type} · active=${result.active} · featured=${result.featured}`
@@ -255,8 +307,8 @@ function initializeDOM(): void {
 
 	document.querySelector("#btnValidate")?.addEventListener("click", () => {
 		const form = readForm();
-		void run(`query content · ${form.contentId || "?"}`, async () => {
-			const node = await client.getContentById(form.contentId);
+		void run(`query content · ${form.contentId || "?"}`, async (api) => {
+			const node = await api.getContentById(form.contentId);
 			if (node === null) {
 				return [`No app found with Content ID "${form.contentId}".`];
 			}
@@ -271,16 +323,16 @@ function initializeDOM(): void {
 
 	document.querySelector("#btnUpdate")?.addEventListener("click", () => {
 		const form = readForm();
-		void run(`mutation updateContent · ${form.contentId || "?"}`, async () => {
-			const result = await client.updateContent(form.contentId, buildUpdate(form));
+		void run(`mutation updateContent · ${form.contentId || "?"}`, async (api) => {
+			const result = await api.updateContent(form.contentId, buildUpdate(form));
 			return [`Updated "${result.name}"`, `active=${result.active} · featured=${result.featured}`];
 		});
 	});
 
 	document.querySelector("#btnDelete")?.addEventListener("click", () => {
 		const form = readForm();
-		void run(`mutation deleteContent · ${form.contentId || "?"}`, async () => {
-			const removed = await client.removeContent(form.contentId);
+		void run(`mutation deleteContent · ${form.contentId || "?"}`, async (api) => {
+			const removed = await api.removeContent(form.contentId);
 			return removed
 				? [`Deleted "${form.contentId}".`]
 				: [`The server did not delete "${form.contentId}".`];
@@ -305,7 +357,29 @@ function initializeDOM(): void {
 		endpoint.textContent = `${BASE_URL === "" ? "{BASE_URL}" : BASE_URL}${ENDPOINT_PATH}`;
 	}
 	applyTypeVisibility();
-	configured();
+	setSignedIn(undefined);
+
+	if (hasAuthorizationResponse()) {
+		// Back from the authorization server with a code (or an error).
+		if (configured()) {
+			completeSignIn(BASE_URL, CLIENT_ID)
+				.then((token) => {
+					setSignedIn(token);
+					notice("Signed in. Your token is held in memory for this page only.", "info");
+				})
+				.catch(failSignIn);
+		}
+		return;
+	}
+
+	// Printed before the configuration check, deliberately: you need this value
+	// to register the OAuth app that issues the client id, so it cannot depend
+	// on already having one.
+	notice(`Register this exact redirect URI in your admin console: ${redirectUri()}`, "info");
+
+	if (configured()) {
+		notice(`Not signed in. Choose "Sign in" to authorize this page.`, "info");
+	}
 }
 
 window.addEventListener("DOMContentLoaded", initializeDOM);

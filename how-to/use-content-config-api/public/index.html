@@ -19,7 +19,12 @@
 			</div>
 			<div class="row middle gap10">
 				<span class="endpoint">POST&nbsp;<b id="endpoint">/here/api/graphql</b></span>
-				<img src="./images/icon-blue.png" alt="HERE" height="36" />
+				<button id="btnSignIn">Sign in</button>
+				<span id="authState" class="auth-state hidden">
+					<span class="auth-pill">Signed in</span>
+					<button id="btnSignOut" class="plain small">Sign out</button>
+				</span>
+				<img src="./images/icon.png" alt="HERE" height="36" />
 			</div>
 		</header>
 
@@ -27,7 +32,7 @@
 			<section class="panel">
 				<div class="panel__head">
 					<span class="panel__title">App definition</span>
-					<button id="btnList">List all apps</button>
+					<button id="btnList" disabled>List all apps</button>
 				</div>
 				<div class="panel__body">
 					<div class="editor">
@@ -74,10 +79,10 @@
 						<hr class="divider" />
 
 						<div class="actions">
-							<button id="btnCreate">Create</button>
-							<button id="btnValidate" class="secondary">Validate</button>
-							<button id="btnUpdate" class="secondary">Update</button>
-							<button id="btnDelete" class="secondary">Delete</button>
+							<button id="btnCreate" disabled>Create</button>
+							<button id="btnValidate" class="secondary" disabled>Validate</button>
+							<button id="btnUpdate" class="secondary" disabled>Update</button>
+							<button id="btnDelete" class="secondary" disabled>Delete</button>
 						</div>
 					</div>
 				</div>

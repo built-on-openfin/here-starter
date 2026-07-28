@@ -193,7 +193,7 @@ export class ContentApiClient {
 	}
 
 	private async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
-		const auth = this.auth.apply();
+		const auth = await this.auth.apply();
 		const response = await this.fetchImpl(`${this.baseUrl}${ENDPOINT}`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json", ...(auth.headers ?? {}) },

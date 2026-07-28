@@ -33,7 +33,7 @@ export function codeToMessage(code: string, detail: string): string {
 		case "BAD_USER_INPUT":
 			return join(detail, "Check the required fields for this content type.");
 		case "UNAUTHENTICATED":
-			return join(detail, "Your session or API key is missing or expired.");
+			return join(detail, "Your session has expired or the credential is missing.");
 		case "FORBIDDEN":
 			return join(detail, "Your account lacks content admin access in this org.");
 		case "NOT_FOUND":
@@ -51,7 +51,7 @@ export function statusToMessage(status: number): string {
 		case 400:
 			return "400 Bad Request: the request was rejected before reaching the API. Your token, or its x-of-auth-id, may not match a configured auth provider for this org.";
 		case 401:
-			return "401 Unauthorized: the request is not authenticated. Supply a valid API JWT (or a here-session cookie when running the script).";
+			return "401 Unauthorized: the request is not authenticated. Sign in again in the UI, or supply a valid API JWT (or a here-session cookie) when running the script.";
 		case 403:
 			return "403 Forbidden: your account lacks admin write access to manage content in this org.";
 		case 404:

@@ -8,26 +8,33 @@ export interface RequestAuth {
  * Strategy for authenticating Content Configuration API requests. Swap the
  * implementation without touching the CRUD code.
  *
- * An API JWT (`JwtAuth`) is the recommended credential and works everywhere —
- * the browser UI, scripts, and CI. The session cookie (`CookieHeaderAuth`)
- * works from Node scripts only; a browser cannot send it cross-origin.
+ * `BearerTokenAuth` covers both an OAuth access token (browser UI) and an org
+ * API JWT (scripts, CI). `CookieHeaderAuth` works from Node only — a browser
+ * cannot send the session cookie cross-origin.
+ *
+ * `apply` may be async so a provider can refresh a credential before a request.
+ * Providers that just set a header return synchronously.
  */
 export interface CredentialProvider {
-	apply(): RequestAuth;
+	apply(): Promise<RequestAuth> | RequestAuth;
 }
 
 /**
- * Sends an API JWT as a bearer token — the recommended way to authenticate.
+ * Sends a bearer token in the `Authorization` header.
  *
- * It is also the only option that works from a browser page served off-origin
- * from your HERE org: a bearer header passes the API's CORS policy, whereas the
- * ambient session cookie cannot be sent cross-origin.
+ * This one provider covers both credentials the API accepts:
  *
- * `authConfigId` is sent as the `x-of-auth-id` header, which the gateway uses
- * to pick a provider — needed only when your org has more than one
- * authentication provider configured.
+ * - An **OAuth access token** the browser UI obtained via authorization code +
+ *   PKCE. HERE issued it, so no `authConfigId` is passed.
+ * - An **org API JWT** issued by an authentication provider configured for your
+ *   organization, used by the sync script. When an org has more than one such
+ *   provider, `authConfigId` is sent as `x-of-auth-id` so the gateway knows
+ *   which one to validate against.
+ *
+ * Do not send `authConfigId` with a HERE-issued OAuth token: that header selects
+ * among externally configured providers, and HERE validates its own tokens.
  */
-export class JwtAuth implements CredentialProvider {
+export class BearerTokenAuth implements CredentialProvider {
 	private readonly token: string;
 	private readonly authConfigId?: string;
 
@@ -48,7 +55,7 @@ export class JwtAuth implements CredentialProvider {
 /**
  * Sends the here-session cookie explicitly. For Node scripts and CI only — a
  * browser cannot set the Cookie header, and cannot send the ambient cookie
- * cross-origin, so use `JwtAuth` there instead.
+ * cross-origin, so use `BearerTokenAuth` there instead.
  */
 export class CookieHeaderAuth implements CredentialProvider {
 	private readonly cookieValue: string;

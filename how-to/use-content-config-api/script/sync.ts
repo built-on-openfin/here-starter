@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { CookieHeaderAuth, JwtAuth } from "../shared/src/auth";
+import { BearerTokenAuth, CookieHeaderAuth } from "../shared/src/auth";
 import type { CredentialProvider } from "../shared/src/auth";
 import { ContentApiClient } from "../shared/src/content-api";
 import { fdc3ToContentInput } from "../shared/src/fdc3-mapping";
@@ -96,7 +96,7 @@ function resolveAuth(): CredentialProvider | undefined {
 	const jwt = process.env.HERE_API_JWT ?? "";
 	if (jwt !== "") {
 		const authConfigId = process.env.HERE_AUTH_ID;
-		return new JwtAuth(jwt, authConfigId === "" ? undefined : authConfigId);
+		return new BearerTokenAuth(jwt, authConfigId === "" ? undefined : authConfigId);
 	}
 
 	const session = process.env.HERE_SESSION ?? "";
@@ -104,6 +104,8 @@ function resolveAuth(): CredentialProvider | undefined {
 		return new CookieHeaderAuth(session);
 	}
 
+	// The browser UI signs in with OAuth, but that flow redirects a user through
+	// a consent screen, so it has nothing to offer a headless script.
 	return undefined;
 }
 

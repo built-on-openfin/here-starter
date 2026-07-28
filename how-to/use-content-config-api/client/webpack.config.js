@@ -4,7 +4,9 @@ const path = require('path');
 const webpack = require('webpack');
 
 // A browser bundle cannot read `.env` at runtime, so the values are inlined
-// here at build time. Re-run the build after changing them.
+// here at build time. Re-run the build after changing them. Only non-secret
+// values belong here — the bundle is readable by anyone who loads the page,
+// which is why the UI signs in with OAuth rather than carrying a token.
 const envPath = path.resolve(__dirname, '..', '.env');
 if (fs.existsSync(envPath)) {
 	process.loadEnvFile(envPath);
@@ -28,8 +30,7 @@ module.exports = {
 	plugins: [
 		new webpack.DefinePlugin({
 			'process.env.BASE_URL': JSON.stringify(process.env.BASE_URL ?? ''),
-			'process.env.HERE_API_JWT': JSON.stringify(process.env.HERE_API_JWT ?? ''),
-			'process.env.HERE_AUTH_ID': JSON.stringify(process.env.HERE_AUTH_ID ?? '')
+			'process.env.HERE_OAUTH_CLIENT_ID': JSON.stringify(process.env.HERE_OAUTH_CLIENT_ID ?? '')
 		})
 	],
 	output: {
