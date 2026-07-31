@@ -1,0 +1,20 @@
+{
+  "name": "here-fdc3-example-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal HERE.io / OpenFin example app demonstrating FDC3 context listening, FDC3 broadcasting, and HERE Notifications.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "esbuild src/app.ts --bundle --outfile=dist/app.js --target=es2020 --format=iife --sourcemap",
+    "watch": "npm run build -- --watch",
+    "start": "node server.js",
+    "dev": "npm run build && npm run start"
+  },
+  "dependencies": {
+    "@openfin/notifications": "^2.14.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4"
+  }
+}

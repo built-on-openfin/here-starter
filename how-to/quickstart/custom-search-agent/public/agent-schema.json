@@ -1,0 +1,30 @@
+{
+  "$schema": "https://resources.here.io/schemas/agents/v1.0/custom-agent.json",
+  "type": "custom",
+  "url": "http://localhost:3001/public/agent.html",
+  "title": "Contacts Interop Search Agent",
+  "description": "Example search agent that searches a local contact list and raises an FDC3 intent (instead of navigating to a URL) when a result is selected.",
+  "icon": "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='22' fill='%234f7cff'/%3E%3Ctext x='24' y='31' font-family='Arial, sans-serif' font-size='22' text-anchor='middle' fill='%23ffffff'%3EC%3C/text%3E%3C/svg%3E",
+  "features": {
+    "search": {
+      "supportsPaging": false
+    },
+    "interop": {
+      "fdc3Version": "2.0"
+    }
+  },
+  "configurationFields": [
+    {
+      "name": "supertab",
+      "title": "Supertab ID",
+      "placeholder": "e.g. vanguard-advisor-dashboard",
+      "defaultValue": "vanguard-advisor-dashboard"
+    },
+    {
+      "name": "dataSource",
+      "title": "Contact Data Source URL",
+      "placeholder": "http://localhost:3001/public/data/contacts.json",
+      "defaultValue": "http://localhost:3001/public/data/contacts.json"
+    }
+  ]
+}

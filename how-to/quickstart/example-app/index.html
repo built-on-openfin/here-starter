@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HERE.io FDC3 &amp; Notifications Example</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark"><img src="https://cdn.openfin.co/versions/logo.svg" alt="Logo"></span>
+      </div>
+      <a class="topbar-link" href="https://www.here.io/enterprise-browser" target="_blank" rel="noopener">
+        HERE Enterprise Browser&nbsp;↗
+      </a>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <h1>FDC3 &amp; Notifications Starter App</h1>
+      <p>
+        A minimal reference app for building on the HERE Enterprise Browser. It demonstrates
+        FDC3 interop (context listening and broadcasting) and HERE notifications, so you can
+        see the platform's core app-to-app functionality working end to end before building
+        your own integration.
+      </p>
+    </section>
+
+    <div id="fdc3-banner" class="fdc3-banner hidden" role="status"></div>
+
+    <section class="card-grid">
+      <!-- Card 1: FDC3 Listening -->
+      <article class="card">
+        <div class="card-head">
+          <span class="card-icon">👂</span>
+          <h2>FDC3 Listening</h2>
+        </div>
+        <p class="card-summary">
+          Registers an <code>fdc3.addContextListener()</code> for any context type. Incoming
+          context is shown as raw JSON below; if the context is an <code>fdc3.contact</code>,
+          it's also rendered as a Contact Card.
+        </p>
+        <p class="card-status">Status: <span id="listener-status">initializing…</span></p>
+
+        <label class="field-label" for="context-output">Last received context (JSON)</label>
+        <textarea
+          id="context-output"
+          class="context-output"
+          readonly
+          placeholder="Waiting for an FDC3 context broadcast…"
+        ></textarea>
+
+        <div id="contact-card" class="contact-card hidden">
+          <h3>Contact Card</h3>
+          <div id="contact-card-body" class="contact-card-body"></div>
+        </div>
+
+        <p class="card-links">
+          Reference:
+          <a href="https://fdc3.finos.org/docs/2.0/api/ref/DesktopAgent#addcontextlistener" target="_blank" rel="noopener">
+            DesktopAgent#addContextListener ↗
+          </a>
+        </p>
+      </article>
+
+      <!-- Card 2: FDC3 Broadcasting -->
+      <article class="card">
+        <div class="card-head">
+          <span class="card-icon">📡</span>
+          <h2>FDC3 Broadcasting</h2>
+        </div>
+        <p class="card-summary">
+          Sends a sample <code>fdc3.contact</code> context via <code>fdc3.broadcast()</code> to
+          any other app joined to the same user channel &mdash; including this app's own
+          listener card above.
+        </p>
+
+        <button id="broadcast-btn" class="btn btn-primary" disabled>
+          Broadcast sample contact
+        </button>
+        <p class="card-status">Status: <span id="broadcast-status">idle</span></p>
+
+        <p class="card-links">
+          Reference:
+          <a href="https://fdc3.finos.org/docs/2.0/api/ref/DesktopAgent#broadcast" target="_blank" rel="noopener">
+            DesktopAgent#broadcast ↗
+          </a>
+          &middot;
+          <a href="https://fdc3.finos.org/schemas/2.0/contact.schema.json" target="_blank" rel="noopener">
+            fdc3.contact schema ↗
+          </a>
+        </p>
+      </article>
+
+      <!-- Card 3: Notifications -->
+      <article class="card">
+        <div class="card-head">
+          <span class="card-icon">🔔</span>
+          <h2>HERE Notifications</h2>
+        </div>
+        <p class="card-summary">
+          Creates a basic HERE Enterprise Browser notification using
+          <code>@openfin/notifications</code>, with an indicator banner, title, body, and an
+          action button.
+        </p>
+
+        <button id="notify-btn" class="btn btn-secondary">Send example notification</button>
+        <p class="card-status">Status: <span id="notify-status">idle</span></p>
+
+        <p class="card-links">
+          Reference:
+          <a href="https://resources.here.io/docs/guide/devs/notifications/get-started/" target="_blank" rel="noopener">
+            Get started with notifications ↗
+          </a>
+        </p>
+      </article>
+
+      <!-- Card 4: FDC3 Intent Listening -->
+      <article class="card">
+        <div class="card-head">
+          <span class="card-icon">🎯</span>
+          <h2>FDC3 Intent Listening</h2>
+        </div>
+        <p class="card-summary">
+          Registers an <code>fdc3.addIntentListener()</code> for the <code>ViewContact</code>
+          intent &mdash; the receiving end of the <code>custom-search-agent</code> example in
+          this project. Raise "Raise Intent" on a search result there to see it land here.
+        </p>
+        <p class="card-status">Status: <span id="intent-status">initializing…</span></p>
+
+        <label class="field-label" for="intent-output">Last received intent context (JSON)</label>
+        <textarea
+          id="intent-output"
+          class="context-output"
+          readonly
+          placeholder="Waiting for a ViewContact intent…"
+        ></textarea>
+
+        <div id="intent-contact-card" class="contact-card hidden">
+          <h3>Contact Card</h3>
+          <div id="intent-contact-card-body" class="contact-card-body"></div>
+        </div>
+
+        <p class="card-links">
+          Reference:
+          <a href="https://fdc3.finos.org/docs/2.0/api/ref/DesktopAgent#addintentlistener" target="_blank" rel="noopener">
+            DesktopAgent#addIntentListener ↗
+          </a>
+        </p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Local example app &middot; served from <code>localhost:3000</code></p>
+  </footer>
+
+  <script src="dist/app.js"></script>
+</body>
+</html>

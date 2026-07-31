@@ -1,0 +1,10 @@
+{
+	"intents": {
+		"listensFor": {
+			"ViewContact": {
+				"displayName": "View Contact",
+				"contexts": ["fdc3.contact"]
+			}
+		}
+	}
+}
