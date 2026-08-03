@@ -1,10 +1,10 @@
 import { writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
-import { loadDotEnv, resolveAuth } from "./env";
+import { fileURLToPath } from "node:url";
 import { ContentApiClient } from "../shared/src/content-api";
 import { contentNodeToFdc3Application } from "../shared/src/fdc3-mapping";
 import type { AppDirectory } from "../shared/src/types";
+import { loadDotEnv, resolveAuth } from "./env";
 
 loadDotEnv();
 
@@ -32,16 +32,16 @@ async function main(): Promise<void> {
 
 	const auth = resolveAuth();
 	if (auth === undefined) {
-		console.error(
-			"Set HERE_API_JWT (recommended) or HERE_SESSION to authenticate. See the README."
-		);
+		console.error("Set HERE_API_JWT (recommended) or HERE_SESSION to authenticate. See the README.");
 		process.exit(1);
 		return;
 	}
 
 	const client = new ContentApiClient({ baseUrl, auth });
 	const nodes = await client.listContents();
-	const directory: AppDirectory = { applications: nodes.map(contentNodeToFdc3Application) };
+	const directory: AppDirectory = {
+		applications: nodes.map((node) => contentNodeToFdc3Application(node))
+	};
 
 	const resolvedPath = resolve(process.cwd(), outPath);
 	writeFileSync(resolvedPath, `${JSON.stringify(directory, null, "\t")}\n`, "utf8");

@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { BearerTokenAuth, CookieHeaderAuth } from "../shared/src/auth";
 import type { CredentialProvider } from "../shared/src/auth";
 

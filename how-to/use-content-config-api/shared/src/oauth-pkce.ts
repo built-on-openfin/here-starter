@@ -30,6 +30,7 @@ export interface OAuthMetadata {
 export class OAuthError extends Error {
 	public readonly code?: string;
 
+	/** Wrap a failure message, optionally tagged with the server's error code. */
 	public constructor(message: string, code?: string) {
 		super(message);
 		this.name = "OAuthError";
@@ -113,15 +114,17 @@ export async function beginSignIn(baseUrl: string, clientId: string): Promise<vo
 	sessionStorage.setItem(VERIFIER_KEY, verifier);
 	sessionStorage.setItem(STATE_KEY, state);
 
-	const params = new URLSearchParams({
-		response_type: "code",
-		client_id: clientId,
-		redirect_uri: redirectUri(),
-		scope: (metadata.scopes_supported ?? [DEFAULT_SCOPE]).join(" "),
-		state,
-		code_challenge: await challengeFor(verifier),
-		code_challenge_method: "S256"
-	});
+	// Built with individual .set() calls, not an object literal: the OAuth spec
+	// mandates these exact snake_case parameter names, and a literal object
+	// would make every key a linter naming-convention violation.
+	const params = new URLSearchParams();
+	params.set("response_type", "code");
+	params.set("client_id", clientId);
+	params.set("redirect_uri", redirectUri());
+	params.set("scope", (metadata.scopes_supported ?? [DEFAULT_SCOPE]).join(" "));
+	params.set("state", state);
+	params.set("code_challenge", await challengeFor(verifier));
+	params.set("code_challenge_method", "S256");
 
 	window.location.assign(`${metadata.authorization_endpoint}?${params.toString()}`);
 }
@@ -144,10 +147,7 @@ export async function completeSignIn(baseUrl: string, clientId: string): Promise
 
 	const failure = params.get("error");
 	if (failure !== null) {
-		throw new OAuthError(
-			params.get("error_description") ?? `Authorization failed: ${failure}`,
-			failure
-		);
+		throw new OAuthError(params.get("error_description") ?? `Authorization failed: ${failure}`, failure);
 	}
 
 	const code = params.get("code");
@@ -171,13 +171,12 @@ export async function completeSignIn(baseUrl: string, clientId: string): Promise
 	}
 
 	const metadata = await discover(baseUrl);
-	const body = new URLSearchParams({
-		grant_type: "authorization_code",
-		code,
-		redirect_uri: redirectUri(),
-		client_id: clientId,
-		code_verifier: verifier
-	});
+	const body = new URLSearchParams();
+	body.set("grant_type", "authorization_code");
+	body.set("code", code);
+	body.set("redirect_uri", redirectUri());
+	body.set("client_id", clientId);
+	body.set("code_verifier", verifier);
 
 	const response = await fetch(metadata.token_endpoint, {
 		method: "POST",
@@ -212,11 +211,11 @@ async function challengeFor(verifier: string): Promise<string> {
 	return base64Url(new Uint8Array(digest));
 }
 
-/** base64url per RFC 4648 §5 — no padding, URL-safe alphabet. */
+/** Base64url per RFC 4648 §5 — no padding, URL-safe alphabet. */
 function base64Url(bytes: Uint8Array): string {
 	let binary = "";
 	for (const byte of bytes) {
 		binary += String.fromCharCode(byte);
 	}
-	return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/=+$/u, "");
+	return btoa(binary).replace(/\+/gu, "-").replace(/\//gu, "_").replace(/[=]+$/u, "");
 }

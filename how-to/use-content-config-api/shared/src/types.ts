@@ -35,10 +35,9 @@ export interface NativeSettings {
 /** Optional FDC3 intent declarations carried through to the API. */
 export interface InteropSettings {
 	intents?: {
-		listensFor?: Record<
-			string,
-			{ displayName?: string; contexts?: string[]; resultType?: string }
-		>;
+		listensFor?: {
+			[intentName: string]: { displayName?: string; contexts?: string[]; resultType?: string };
+		};
 	};
 }
 
@@ -81,6 +80,9 @@ export interface DesktopContentInput {
 	access: Access | null;
 }
 
+/**
+ *
+ */
 export type ContentInput = DesktopContentInput | WebContentInput;
 
 /** Shape selected back from the create/update mutations. */

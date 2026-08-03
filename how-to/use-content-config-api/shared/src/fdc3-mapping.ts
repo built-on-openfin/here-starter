@@ -25,7 +25,10 @@ const DEFAULT_DLP: DlpSettings = {
 };
 const DEFAULT_ACCESS: Access = { subjects: [], primitives: [] };
 
-/** Convert an FDC3 2.0 Application record into a HERE content create/update body. */
+/**
+ * Convert an FDC3 2.0 Application record into a HERE content create/update body.
+ * @throws {Error} if a native app is missing `details.path`, or a web app is missing `details.url`.
+ */
 export function fdc3ToContentInput(app: Fdc3Application): ContentInput {
 	const here: HereHostManifest = app.hostManifests?.here ?? {};
 	const name = app.title ?? app.name;

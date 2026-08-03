@@ -1,12 +1,6 @@
 import type { CredentialProvider } from "./auth";
 import { ContentApiError, codeToMessage, statusToMessage } from "./errors";
-import type {
-	BulkUpdateEntry,
-	ContentInput,
-	ContentNode,
-	ContentUpdate,
-	WriteResult
-} from "./types";
+import type { BulkUpdateEntry, ContentInput, ContentNode, ContentUpdate, WriteResult } from "./types";
 
 /** Construction options for the client. */
 export interface ContentApiOptions {
@@ -26,6 +20,7 @@ interface GraphQlEnvelope<T> {
 	message?: string;
 }
 
+/** Shape of one page of the `contents` query. */
 interface ContentsQueryData {
 	contents: {
 		edges: { node: ContentNode }[];
@@ -57,7 +52,10 @@ const NODE_FIELDS =
 /** Fields selected back from create/update mutations. */
 const WRITE_FIELDS = "uuid id name type active featured";
 
-/** The API rejects an update with no fields, so fail early with a clearer message. */
+/**
+ * The API rejects an update with no fields, so fail early with a clearer message.
+ * @throws {ContentApiError} if `input` has no fields set.
+ */
 function assertNonEmptyUpdate(input: ContentUpdate, identifier: string): void {
 	if (Object.keys(input).length === 0) {
 		throw new ContentApiError(0, `Update for "${identifier}" is empty — include at least one field.`);
@@ -67,9 +65,12 @@ function assertNonEmptyUpdate(input: ContentUpdate, identifier: string): void {
 /** Client for the HERE Content Configuration API (GraphQL queries and mutations). */
 export class ContentApiClient {
 	private readonly baseUrl: string;
+
 	private readonly auth: CredentialProvider;
+
 	private readonly fetchImpl: typeof fetch;
 
+	/** Build a client for one org, using the given credential provider. */
 	public constructor(options: ContentApiOptions) {
 		this.baseUrl = options.baseUrl.replace(/\/$/u, "");
 		this.auth = options.auth;
@@ -86,7 +87,7 @@ export class ContentApiClient {
 
 		while (hasNext) {
 			const query =
-				`query($first: Int!, $after: String) { contents(first: $first, after: $after) ` +
+				"query($first: Int!, $after: String) { contents(first: $first, after: $after) " +
 				`{ edges { node { ${NODE_FIELDS} } } pageInfo { hasNextPage endCursor } } }`;
 			const data: ContentsQueryData = await this.graphql<ContentsQueryData>(query, {
 				first: pageSize,
@@ -115,34 +116,13 @@ export class ContentApiClient {
 		return this.lookup(query, { uuid });
 	}
 
-	/**
-	 * Run a single-app lookup.
-	 *
-	 * A missing app comes back as a NOT_FOUND error rather than `content: null`,
-	 * so translate that one case — "does this app exist?" deserves an answer,
-	 * not an exception. Every other failure still throws.
-	 */
-	private async lookup(
-		query: string,
-		variables: Record<string, unknown>
-	): Promise<ContentNode | null> {
-		try {
-			return (await this.graphql<{ content: ContentNode | null }>(query, variables)).content;
-		} catch (err) {
-			if (err instanceof ContentApiError && err.code === "NOT_FOUND") {
-				return null;
-			}
-			throw err;
-		}
-	}
-
 	/** Create a new application definition. */
 	public async createContent(input: ContentInput): Promise<WriteResult> {
 		const query =
-			`mutation CreateContent($input: CreateContentInput!) ` +
+			"mutation CreateContent($input: CreateContentInput!) " +
 			`{ createContent(input: $input) { ${WRITE_FIELDS} } }`;
-		return (await this.graphql<{ createContent: WriteResult }>(query, { input }))
-			.createContent;
+		const data = await this.graphql<{ createContent: WriteResult }>(query, { input });
+		return data.createContent;
 	}
 
 	/**
@@ -155,10 +135,10 @@ export class ContentApiClient {
 	public async updateContent(identifier: string, input: ContentUpdate): Promise<WriteResult> {
 		assertNonEmptyUpdate(input, identifier);
 		const query =
-			`mutation UpdateContent($identifier: ID!, $input: UpdateContentInput!) ` +
+			"mutation UpdateContent($identifier: ID!, $input: UpdateContentInput!) " +
 			`{ updateContent(identifier: $identifier, input: $input) { ${WRITE_FIELDS} } }`;
-		return (await this.graphql<{ updateContent: WriteResult }>(query, { identifier, input }))
-			.updateContent;
+		const data = await this.graphql<{ updateContent: WriteResult }>(query, { identifier, input });
+		return data.updateContent;
 	}
 
 	/**
@@ -166,9 +146,9 @@ export class ContentApiClient {
 	 * Access permissions and dock entries referencing it are cleaned up too.
 	 */
 	public async removeContent(identifier: string): Promise<boolean> {
-		const query = `mutation DeleteContent($identifier: ID!) { deleteContent(identifier: $identifier) }`;
-		return (await this.graphql<{ deleteContent: boolean }>(query, { identifier }))
-			.deleteContent;
+		const query = "mutation DeleteContent($identifier: ID!) { deleteContent(identifier: $identifier) }";
+		const data = await this.graphql<{ deleteContent: boolean }>(query, { identifier });
+		return data.deleteContent;
 	}
 
 	/**
@@ -179,10 +159,10 @@ export class ContentApiClient {
 	 */
 	public async createContents(inputs: ContentInput[]): Promise<WriteResult[]> {
 		const query =
-			`mutation BulkCreate($inputs: [CreateContentInput!]!) ` +
+			"mutation BulkCreate($inputs: [CreateContentInput!]!) " +
 			`{ createContents(inputs: $inputs) { created { ${WRITE_FIELDS} } } }`;
-		return (await this.graphql<{ createContents: { created: WriteResult[] } }>(query, { inputs }))
-			.createContents.created;
+		const data = await this.graphql<{ createContents: { created: WriteResult[] } }>(query, { inputs });
+		return data.createContents.created;
 	}
 
 	/** Update many apps in one all-or-nothing request. */
@@ -191,26 +171,46 @@ export class ContentApiClient {
 			assertNonEmptyUpdate(entry.update, entry.identifier);
 		}
 		const query =
-			`mutation BulkUpdate($inputs: [BulkUpdateContentInput!]!) ` +
+			"mutation BulkUpdate($inputs: [BulkUpdateContentInput!]!) " +
 			`{ updateContents(inputs: $inputs) { updated { ${WRITE_FIELDS} } } }`;
-		return (await this.graphql<{ updateContents: { updated: WriteResult[] } }>(query, { inputs }))
-			.updateContents.updated;
+		const data = await this.graphql<{ updateContents: { updated: WriteResult[] } }>(query, { inputs });
+		return data.updateContents.updated;
 	}
 
 	/** Delete many apps in one all-or-nothing request. Returns the deleted UUIDs. */
 	public async deleteContents(identifiers: string[]): Promise<string[]> {
 		const query =
-			`mutation BulkDelete($identifiers: [ID!]!) ` +
-			`{ deleteContents(identifiers: $identifiers) { deleted } }`;
-		return (await this.graphql<{ deleteContents: { deleted: string[] } }>(query, { identifiers }))
-			.deleteContents.deleted;
+			"mutation BulkDelete($identifiers: [ID!]!) " +
+			"{ deleteContents(identifiers: $identifiers) { deleted } }";
+		const data = await this.graphql<{ deleteContents: { deleted: string[] } }>(query, { identifiers });
+		return data.deleteContents.deleted;
 	}
 
-	private async graphql<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+	/**
+	 * Run a single-app lookup.
+	 *
+	 * A missing app comes back as a NOT_FOUND error rather than `content: null`,
+	 * so translate that one case — "does this app exist?" deserves an answer,
+	 * not an exception. Every other failure still throws.
+	 */
+	private async lookup(query: string, variables: { [key: string]: unknown }): Promise<ContentNode | null> {
+		try {
+			const data = await this.graphql<{ content: ContentNode | null }>(query, variables);
+			return data.content;
+		} catch (err) {
+			if (err instanceof ContentApiError && err.code === "NOT_FOUND") {
+				return null;
+			}
+			throw err;
+		}
+	}
+
+	/** Send one GraphQL request and unwrap its `data`, throwing on any error shape. */
+	private async graphql<T>(query: string, variables?: { [key: string]: unknown }): Promise<T> {
 		const auth = await this.auth.apply();
 		const response = await this.fetchImpl(`${this.baseUrl}${ENDPOINT}`, {
 			method: "POST",
-			headers: { "Content-Type": "application/json", ...(auth.headers ?? {}) },
+			headers: { "Content-Type": "application/json", ...auth.headers },
 			credentials: auth.credentials,
 			body: JSON.stringify({ query, variables })
 		});

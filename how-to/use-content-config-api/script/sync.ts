@@ -1,15 +1,10 @@
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { loadDotEnv, resolveAuth } from "./env";
+import { fileURLToPath } from "node:url";
 import { ContentApiClient } from "../shared/src/content-api";
 import { fdc3ToContentInput } from "../shared/src/fdc3-mapping";
-import type {
-	AppDirectory,
-	ContentInput,
-	ContentNode,
-	ContentUpdate
-} from "../shared/src/types";
+import type { AppDirectory, ContentInput, ContentNode, ContentUpdate } from "../shared/src/types";
+import { loadDotEnv, resolveAuth } from "./env";
 
 loadDotEnv();
 
@@ -50,20 +45,20 @@ export function computePlan(desired: DesiredApp[], live: ContentNode[], prune: b
 	}
 
 	const toDelete = prune
-		? live
-				.filter((node) => !desiredIds.has(node.id))
-				.map((node) => ({ uuid: node.uuid, contentId: node.id }))
+		? live.filter((node) => !desiredIds.has(node.id)).map((node) => ({ uuid: node.uuid, contentId: node.id }))
 		: [];
 
 	return { toCreate, toUpdate, toDelete };
 }
 
+/** Read and parse `apps.config.json` from the workspace root. */
 function loadManifest(): AppDirectory {
 	const here = dirname(fileURLToPath(import.meta.url));
 	const raw = readFileSync(resolve(here, "..", "apps.config.json"), "utf8");
 	return JSON.parse(raw) as AppDirectory;
 }
 
+/** Print a create/update/delete plan to the console. */
 function printPlan(plan: SyncPlan): void {
 	console.log("Sync plan:");
 	for (const c of plan.toCreate) {
@@ -81,6 +76,7 @@ function printPlan(plan: SyncPlan): void {
 	}
 }
 
+/** Compute the plan against the live directory, print it, and apply if asked. */
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
 	const apply = args.includes("--apply");
@@ -95,9 +91,7 @@ async function main(): Promise<void> {
 
 	const auth = resolveAuth();
 	if (auth === undefined) {
-		console.error(
-			"Set HERE_API_JWT (recommended) or HERE_SESSION to authenticate. See the README."
-		);
+		console.error("Set HERE_API_JWT (recommended) or HERE_SESSION to authenticate. See the README.");
 		process.exit(1);
 		return;
 	}
@@ -144,7 +138,9 @@ async function main(): Promise<void> {
  * strip every existing assignment rather than leave it alone.
  */
 export function toUpdatePayload(desired: DesiredApp): ContentUpdate {
-	const { contentType: _contentType, contentId: _contentId, access, ...rest } = desired.input;
+	const { contentType, contentId, access, ...rest } = desired.input;
+	void contentType;
+	void contentId;
 	return desired.declaresAccess ? { ...rest, access } : rest;
 }
 

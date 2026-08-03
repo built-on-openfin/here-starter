@@ -41,6 +41,7 @@ interface FormState {
 	featured: boolean;
 }
 
+/** Wire up the console: sign-in state, the CRUD form, and the activity log. */
 function initializeDOM(): void {
 	// Held in memory only, so closing or reloading the page ends the session.
 	// There is no refresh grant, so an expired token means signing in again.
@@ -50,14 +51,7 @@ function initializeDOM(): void {
 
 	// --- sign-in state ------------------------------------------------------
 
-	const ACTION_IDS = [
-		"#btnList",
-		"#btnExport",
-		"#btnCreate",
-		"#btnValidate",
-		"#btnUpdate",
-		"#btnDelete"
-	];
+	const ACTION_IDS = ["#btnList", "#btnExport", "#btnCreate", "#btnValidate", "#btnUpdate", "#btnDelete"];
 
 	/**
 	 * `authConfigId` only applies to a pasted API JWT — never pass it for an
@@ -90,14 +84,17 @@ function initializeDOM(): void {
 
 	// --- reading and building from the form ---------------------------------
 
+	/** Read a trimmed input value by selector. */
 	function text(id: string): string {
 		return (document.querySelector<HTMLInputElement>(id)?.value ?? "").trim();
 	}
 
+	/** Read a checkbox's checked state by selector. */
 	function checked(id: string): boolean {
 		return document.querySelector<HTMLInputElement>(id)?.checked ?? false;
 	}
 
+	/** Snapshot the form into a `FormState`. */
 	function readForm(): FormState {
 		return {
 			contentId: text("#f-contentId"),
@@ -153,6 +150,7 @@ function initializeDOM(): void {
 		setChecked("#f-featured", node.featured ?? false);
 	}
 
+	/** Set an input or select's value by selector, if it exists. */
 	function setValue(id: string, value: string): void {
 		const field = document.querySelector<HTMLInputElement | HTMLSelectElement>(id);
 		if (field !== null) {
@@ -160,6 +158,7 @@ function initializeDOM(): void {
 		}
 	}
 
+	/** Set a checkbox's checked state by selector, if it exists. */
 	function setChecked(id: string, value: boolean): void {
 		const field = document.querySelector<HTMLInputElement>(id);
 		if (field !== null) {
@@ -206,6 +205,7 @@ function initializeDOM(): void {
 		};
 	}
 
+	/** Append a one-line, non-request entry to the activity log. */
 	function notice(message: string, kind: "error" | "info"): void {
 		document.querySelector("#logEmpty")?.remove();
 		const entry = document.createElement("div");
@@ -215,6 +215,7 @@ function initializeDOM(): void {
 		scrollToLatest();
 	}
 
+	/** Build a `<span>` with a class and text content. */
 	function span(className: string, content: string): HTMLSpanElement {
 		const el = document.createElement("span");
 		el.className = className;
@@ -222,9 +223,10 @@ function initializeDOM(): void {
 		return el;
 	}
 
+	/** Scroll the activity log to its latest entry. */
 	function scrollToLatest(): void {
 		const body = logEl?.parentElement;
-		if (body != null) {
+		if (body !== null && body !== undefined) {
 			body.scrollTop = body.scrollHeight;
 		}
 	}
@@ -242,6 +244,7 @@ function initializeDOM(): void {
 
 	// --- wiring -------------------------------------------------------------
 
+	/** Check BASE_URL and HERE_OAUTH_CLIENT_ID are set, reporting what's missing. */
 	function configured(): boolean {
 		const missing: string[] = [];
 		if (BASE_URL === "") {
@@ -284,10 +287,7 @@ function initializeDOM(): void {
 	 * the signed-in check happens in one place and callers get a non-optional
 	 * client to work with.
 	 */
-	async function run(
-		label: string,
-		call: (api: ContentApiClient) => Promise<string[]>
-	): Promise<void> {
+	async function run(label: string, call: (api: ContentApiClient) => Promise<string[]>): Promise<void> {
 		if (client === undefined) {
 			notice("Sign in first.", "error");
 			return;
@@ -305,6 +305,7 @@ function initializeDOM(): void {
 		}
 	}
 
+	/** Show the URL field for a web app, or the executable path field for a desktop one. */
 	function applyTypeVisibility(): void {
 		const isWeb = document.querySelector<HTMLSelectElement>("#f-type")?.value !== "native";
 		document.querySelector("#field-url")?.classList.toggle("hidden", !isWeb);
@@ -373,9 +374,7 @@ function initializeDOM(): void {
 			if (nodes.length === 0) {
 				return ["Your directory has no apps yet."];
 			}
-			const rows = nodes.map(
-				(n) => `• ${n.name}  [${n.id}]  ${n.type}  ${n.active ? "active" : "inactive"}`
-			);
+			const rows = nodes.map((n) => `• ${n.name}  [${n.id}]  ${n.type}  ${n.active ? "active" : "inactive"}`);
 			return [`${nodes.length} app(s):`, ...rows];
 		});
 	});
@@ -383,7 +382,9 @@ function initializeDOM(): void {
 	document.querySelector("#btnExport")?.addEventListener("click", () => {
 		void run("export directory as FDC3 manifest", async (api) => {
 			const nodes = await api.listContents();
-			const directory: AppDirectory = { applications: nodes.map(contentNodeToFdc3Application) };
+			const directory: AppDirectory = {
+				applications: nodes.map((node) => contentNodeToFdc3Application(node))
+			};
 			downloadJson(`content-directory-${Date.now()}.json`, directory);
 			return [
 				`Downloaded ${nodes.length} app(s) as an FDC3 App Directory manifest.`,
@@ -431,9 +432,7 @@ function initializeDOM(): void {
 		const form = readForm();
 		void run(`mutation deleteContent · ${form.contentId || "?"}`, async (api) => {
 			const removed = await api.removeContent(form.contentId);
-			return removed
-				? [`Deleted "${form.contentId}".`]
-				: [`The server did not delete "${form.contentId}".`];
+			return removed ? [`Deleted "${form.contentId}".`] : [`The server did not delete "${form.contentId}".`];
 		});
 	});
 
@@ -476,12 +475,9 @@ function initializeDOM(): void {
 	notice(`OAuth redirect URI for OAuth app registration: ${redirectUri()}`, "info");
 
 	if (configured()) {
-		notice(`Not signed in. Choose "Sign in" to authorize this page.`, "info");
+		notice('Not signed in. Choose "Sign in" to authorize this page.', "info");
 	} else {
-		notice(
-			'OAuth is not configured, to use JWT instead paste an API JWT above',
-			"info"
-		);
+		notice("OAuth is not configured, to use JWT instead paste an API JWT above", "info");
 	}
 }
 

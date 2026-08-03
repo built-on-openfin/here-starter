@@ -8,8 +8,10 @@
  */
 export class ContentApiError extends Error {
 	public readonly status: number;
+
 	public readonly code?: string;
 
+	/** Wrap a failure with its HTTP status (0 for a GraphQL-layer error) and code. */
 	public constructor(status: number, message: string, code?: string) {
 		super(message);
 		this.name = "ContentApiError";
