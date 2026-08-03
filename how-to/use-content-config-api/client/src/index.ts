@@ -1,7 +1,7 @@
 import { BearerTokenAuth } from "../../shared/src/auth";
 import { ContentApiClient } from "../../shared/src/content-api";
 import { ContentApiError } from "../../shared/src/errors";
-import { fdc3ToContentInput } from "../../shared/src/fdc3-mapping";
+import { contentNodeToFdc3Application, fdc3ToContentInput } from "../../shared/src/fdc3-mapping";
 import {
 	beginSignIn,
 	completeSignIn,
@@ -9,7 +9,7 @@ import {
 	OAuthError,
 	redirectUri
 } from "../../shared/src/oauth-pkce";
-import type { ContentNode, ContentUpdate, Fdc3Application } from "../../shared/src/types";
+import type { AppDirectory, ContentNode, ContentUpdate, Fdc3Application } from "../../shared/src/types";
 
 /**
  * Injected at build time by webpack from `.env` — see `.env.example`.
@@ -50,7 +50,14 @@ function initializeDOM(): void {
 
 	// --- sign-in state ------------------------------------------------------
 
-	const ACTION_IDS = ["#btnList", "#btnCreate", "#btnValidate", "#btnUpdate", "#btnDelete"];
+	const ACTION_IDS = [
+		"#btnList",
+		"#btnExport",
+		"#btnCreate",
+		"#btnValidate",
+		"#btnUpdate",
+		"#btnDelete"
+	];
 
 	/**
 	 * `authConfigId` only applies to a pasted API JWT — never pass it for an
@@ -222,6 +229,17 @@ function initializeDOM(): void {
 		}
 	}
 
+	/** Trigger a browser download of `data` as a formatted JSON file. */
+	function downloadJson(filename: string, data: unknown): void {
+		const blob = new Blob([JSON.stringify(data, null, "\t")], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement("a");
+		link.href = url;
+		link.download = filename;
+		link.click();
+		URL.revokeObjectURL(url);
+	}
+
 	// --- wiring -------------------------------------------------------------
 
 	function configured(): boolean {
@@ -359,6 +377,18 @@ function initializeDOM(): void {
 				(n) => `• ${n.name}  [${n.id}]  ${n.type}  ${n.active ? "active" : "inactive"}`
 			);
 			return [`${nodes.length} app(s):`, ...rows];
+		});
+	});
+
+	document.querySelector("#btnExport")?.addEventListener("click", () => {
+		void run("export directory as FDC3 manifest", async (api) => {
+			const nodes = await api.listContents();
+			const directory: AppDirectory = { applications: nodes.map(contentNodeToFdc3Application) };
+			downloadJson(`content-directory-${Date.now()}.json`, directory);
+			return [
+				`Downloaded ${nodes.length} app(s) as an FDC3 App Directory manifest.`,
+				"Access assignments were not included — they're org-specific and wouldn't carry over correctly."
+			];
 		});
 	});
 

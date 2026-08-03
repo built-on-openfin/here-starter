@@ -1,8 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { BearerTokenAuth, CookieHeaderAuth } from "../shared/src/auth";
-import type { CredentialProvider } from "../shared/src/auth";
+import { loadDotEnv, resolveAuth } from "./env";
 import { ContentApiClient } from "../shared/src/content-api";
 import { fdc3ToContentInput } from "../shared/src/fdc3-mapping";
 import type {
@@ -12,12 +11,7 @@ import type {
 	ContentUpdate
 } from "../shared/src/types";
 
-// Load `.env` from the workspace root if present. Real environment variables
-// already set in the shell take precedence, so CI can inject them directly.
-const envPath = resolve(dirname(fileURLToPath(import.meta.url)), "..", ".env");
-if (existsSync(envPath)) {
-	process.loadEnvFile(envPath);
-}
+loadDotEnv();
 
 /**
  * A manifest entry, plus whether it explicitly declared access assignments.
@@ -85,28 +79,6 @@ function printPlan(plan: SyncPlan): void {
 	if (plan.toCreate.length + plan.toUpdate.length + plan.toDelete.length === 0) {
 		console.log("  (no changes)");
 	}
-}
-
-/**
- * Pick a credential provider from the environment. An API JWT is the
- * recommended credential; the here-session cookie is a convenience for local
- * runs (Node only — it cannot be used from the browser).
- */
-function resolveAuth(): CredentialProvider | undefined {
-	const jwt = process.env.HERE_API_JWT ?? "";
-	if (jwt !== "") {
-		const authConfigId = process.env.HERE_AUTH_ID;
-		return new BearerTokenAuth(jwt, authConfigId === "" ? undefined : authConfigId);
-	}
-
-	const session = process.env.HERE_SESSION ?? "";
-	if (session !== "") {
-		return new CookieHeaderAuth(session);
-	}
-
-	// The browser UI signs in with OAuth, but that flow redirects a user through
-	// a consent screen, so it has nothing to offer a headless script.
-	return undefined;
 }
 
 async function main(): Promise<void> {

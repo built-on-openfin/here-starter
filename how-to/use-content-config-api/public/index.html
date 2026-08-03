@@ -52,7 +52,6 @@
 			<section class="panel">
 				<div class="panel__head">
 					<span class="panel__title">App definition</span>
-					<button id="btnList" disabled>List all apps</button>
 				</div>
 				<div class="panel__body">
 					<div class="editor">
@@ -96,13 +95,21 @@
 							</div>
 						</div>
 
-						<hr class="divider" />
-
 						<div class="actions">
 							<button id="btnCreate" disabled>Create</button>
 							<button id="btnValidate" class="secondary" disabled>Validate</button>
 							<button id="btnUpdate" class="secondary" disabled>Update</button>
 							<button id="btnDelete" class="secondary" disabled>Delete</button>
+						</div>
+
+						<hr class="divider" />
+
+						<div class="col gap10">
+							<span class="actions-label">App directory</span>
+							<div class="actions">
+								<button id="btnList" disabled>List all apps</button>
+								<button id="btnExport" class="secondary" disabled>Export as JSON</button>
+							</div>
 						</div>
 					</div>
 				</div>

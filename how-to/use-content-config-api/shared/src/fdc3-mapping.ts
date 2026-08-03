@@ -1,6 +1,7 @@
 import type {
 	Access,
 	ContentInput,
+	ContentNode,
 	DesktopContentInput,
 	DlpSettings,
 	EnvironmentAvailability,
@@ -86,4 +87,63 @@ export function fdc3ToContentInput(app: Fdc3Application): ContentInput {
 		access: here.access ?? DEFAULT_ACCESS
 	};
 	return web;
+}
+
+/**
+ * Convert a live content node back into an FDC3 2.0 Application record — the
+ * opposite of `fdc3ToContentInput`. Used to export a directory as an
+ * app-directory manifest, e.g. to carry it into another environment.
+ *
+ * Deliberately omits `access`: `subjects`/`primitives` are org-specific
+ * UUIDs (a permission or group id meaningful only in the org the node came
+ * from), so carrying them into a different org's manifest would either fail
+ * outright or — worse — silently grant access to whatever unrelated
+ * subject happens to hold that id there. Leaving `access` out of the FDC3
+ * record matches how `sync.ts` already treats undeclared access: applying
+ * this manifest anywhere leaves that app's access assignments untouched
+ * rather than wiping or misapplying them.
+ */
+export function contentNodeToFdc3Application(node: ContentNode): Fdc3Application {
+	const here: HereHostManifest = {
+		active: node.active,
+		featured: node.featured ?? false,
+		customLabel: node.customLabel
+	};
+
+	if (node.type === "DESKTOP") {
+		return {
+			appId: node.id,
+			name: node.name,
+			title: node.name,
+			type: "native",
+			details: { path: node.desktopPath, arguments: node.desktopArgs },
+			icons: node.icon === undefined ? undefined : [{ src: node.icon }],
+			hostManifests: { here: { ...here, withSnap: node.withSnap ?? false } }
+		};
+	}
+
+	return {
+		appId: node.id,
+		name: node.name,
+		title: node.name,
+		type: "web",
+		// A node can carry more than one URL (e.g. allowed redirect targets); FDC3
+		// has room for exactly one, so take the primary — same simplification the
+		// UI's "Validate" already makes when it loads a node back into the form.
+		details: { url: node.url ?? node.urls?.[0] },
+		icons: node.icon === undefined ? undefined : [{ src: node.icon }],
+		hostManifests: {
+			here: {
+				...here,
+				hereApiAccess: node.hereApiAccess ?? false,
+				allowDuplication: node.allowDuplication ?? false,
+				allowOpenWithDefaultBrowser: node.allowOpenWithDefaultBrowser ?? false,
+				useAIContext: node.useAIContext ?? false,
+				enableSimpleWindow: node.enableSimpleWindow ?? false,
+				viewSettings: node.viewSettings ?? DEFAULT_VIEW,
+				environmentAvailability: node.environmentAvailability ?? DEFAULT_ENV,
+				dataLossPreventionSettings: node.dataLossPreventionSettings ?? DEFAULT_DLP
+			}
+		}
+	};
 }

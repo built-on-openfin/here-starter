@@ -36,9 +36,23 @@ interface ContentsQueryData {
 /** Every request goes to this one endpoint — reads and writes alike. */
 const ENDPOINT = "/here/api/graphql";
 
+/**
+ * Selects every field `fdc3ToContentInput` can write, so a node round-trips
+ * through `contentNodeToFdc3Application` without silently dropping settings.
+ * The one deliberate exception is `access`: it comes back as org-specific
+ * subject/permission UUIDs unlikely to mean anything in a different org, so
+ * the reverse mapper leaves it out even though it's fetched here.
+ */
 const NODE_FIELDS =
-	"uuid id name type active featured icon createdAt " +
-	"... on WebContent { url urls } ... on DesktopContent { desktopPath desktopArgs withSnap }";
+	"uuid id name type active featured icon createdAt customLabel " +
+	"access { subjects primitives } " +
+	"... on WebContent { " +
+	"url urls hereApiAccess allowDuplication allowOpenWithDefaultBrowser useAIContext enableSimpleWindow " +
+	"environmentAvailability { enableHereEB enableHereZero enableHereMobile } " +
+	"viewSettings { navigationControls reloadControl } " +
+	"dataLossPreventionSettings { copyBehavior pasteBehavior screenCaptureBehavior printBehavior } " +
+	"} " +
+	"... on DesktopContent { desktopPath desktopArgs withSnap }";
 
 /** Fields selected back from create/update mutations. */
 const WRITE_FIELDS = "uuid id name type active featured";

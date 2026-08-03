@@ -8,6 +8,7 @@
 		"typecheck": "tsc --noEmit",
 		"start": "npm run build && npx --yes http-server ./public -p 8282 -c-1",
 		"sync": "tsx script/sync.ts",
+		"export": "tsx script/export.ts",
 		"setup": "npm install && npm run build"
 	},
 	"engines": {

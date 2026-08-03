@@ -10,7 +10,9 @@ full create/read/update/delete. It includes two things:
    see below), shapes an app definition, and runs the create → validate → update → delete
    lifecycle against your directory, logging every request and response.
 2. A **config-as-code sync script** that reconciles an [FDC3 2.0 App Directory](https://fdc3.finos.org/docs/app-directory/overview)
-   manifest (`apps.config.json`) against your live directory.
+   manifest (`apps.config.json`) against your live directory, plus an **export script** (and a UI
+   button) that does the reverse: dump a live directory into that same manifest shape, e.g. to
+   carry it into another environment.
 
 > Auth is a pluggable `CredentialProvider` (`shared/src/auth.ts`), so the browser and the script
 > authenticate differently without either one changing a line of CRUD code.
@@ -206,8 +208,8 @@ The action buttons stay disabled until you sign in, because without a token ever
 ## Running the config-as-code sync script
 
 The script reads `apps.config.json` (an FDC3 App Directory), compares it with your live directory,
-and prints a plan. It picks up credentials from the same `.env` file, so no exports are needed, and
-it is a **dry run by default**.
+and prints a plan. It picks up credentials from the same `.env` file, so you don't need to `export`
+them into your shell, and it is a **dry run by default**.
 
 ```shell
 # preview changes (no writes)
@@ -229,10 +231,44 @@ Updates omit `access` unless an app declares it under `hostManifests.here.access
 field leaves existing assignments untouched, whereas sending an empty `access` object would strip
 every assignment — so a manifest that says nothing about access never changes it.
 
-The script authenticates with `HERE_API_JWT`. It does not use OAuth: that flow redirects a user
-through a consent screen, which a headless script has no way to satisfy. As a Node-only
-alternative you can set `HERE_SESSION` instead: while logged into the Admin Console, open developer
-tools → Application → Cookies → copy the `here-session` value.
+## Exporting a directory (copying between environments)
+
+The export script is the reverse of sync: it reads your live directory and writes it out as an
+FDC3 App Directory manifest, using `contentNodeToFdc3Application` in `shared/src/fdc3-mapping.ts` —
+the opposite of the `fdc3ToContentInput` the UI and sync script both write with. This is how you
+carry a directory from one environment to another: export it from the source org, point `.env` at
+the destination org, then sync it in.
+
+```shell
+# writes apps.config.json in the workspace root (git-tracked — review with `git diff` before committing)
+npm run export
+
+# write somewhere else instead
+npm run export -- --out my-other-org.json
+```
+
+Then, with `.env` pointed at the destination org:
+
+```shell
+npm run sync -- --apply
+```
+
+The guided UI has the same export as an **Export as JSON** button next to **List all apps** — it
+downloads the current directory as the same manifest shape, straight from the browser.
+
+**Access assignments are not exported.** `subjects` and `primitives` on a live app are org-specific
+UUIDs — a permission or group id meaningful only in the org the app came from. Carrying them into a
+different org's manifest would either be rejected outright or, worse, silently grant access to
+whatever unrelated subject happens to hold that id there. An exported manifest never declares
+`access`, so applying it anywhere leaves that app's access assignments alone (same as any other
+manifest that doesn't mention access — see above) rather than wiping or misapplying them. Set access
+up by hand in the destination org.
+
+Both scripts authenticate with `HERE_API_JWT`, via the shared `resolveAuth()` in `script/env.ts`.
+Neither uses OAuth: that flow redirects a user through a consent screen, which a headless script
+has no way to satisfy. As a Node-only alternative you can set `HERE_SESSION` instead: while logged
+into the Admin Console, open developer tools → Application → Cookies → copy the `here-session`
+value.
 
 ## Troubleshooting
 
@@ -256,7 +292,7 @@ tools → Application → Cookies → copy the `here-session` value.
 | `shared/src/oauth-pkce.ts` | The OAuth handshake. Copy as-is; it has no dependencies |
 | `shared/src/auth.ts` | The `BearerTokenAuth` provider and the `CredentialProvider` seam |
 | `shared/src/content-api.ts` | The GraphQL client: queries, mutations, and bulk operations |
-| `shared/src/fdc3-mapping.ts` | FDC3 Application → HERE content mapping |
+| `shared/src/fdc3-mapping.ts` | FDC3 Application ↔ HERE content mapping, both directions |
 
 Everything under `client/` and `public/` is sample scaffolding — a console for exercising the API,
 not a starting point for a product.
@@ -268,9 +304,11 @@ not a starting point for a product.
 | `shared/src/content-api.ts` | Reusable client: GraphQL queries, mutations, and bulk operations |
 | `shared/src/oauth-pkce.ts` | OAuth 2.0 authorization code + PKCE sign-in (browser only) |
 | `shared/src/auth.ts` | Pluggable credential providers (bearer token, session cookie) |
-| `shared/src/fdc3-mapping.ts` | FDC3 Application → HERE content mapping |
+| `shared/src/fdc3-mapping.ts` | FDC3 Application ↔ HERE content mapping, both directions |
 | `client/src/index.ts` | Guided browser UI |
-| `script/sync.ts` | Config-as-code reconcile |
+| `script/env.ts` | Shared `.env` loading and credential resolution for both scripts |
+| `script/sync.ts` | Config-as-code reconcile: manifest → live directory |
+| `script/export.ts` | The reverse: live directory → manifest |
 | `apps.config.json` | Sample FDC3 App Directory manifest |
 | `.env.example` | Template for your local `.env` |
 

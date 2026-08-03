@@ -110,7 +110,15 @@ export interface BulkUpdateEntry {
 	update: ContentUpdate;
 }
 
-/** A single content node from the GraphQL read API. */
+/**
+ * A single content node from the GraphQL read API.
+ *
+ * Covers both `WebContent` and `DesktopContent` in one flat shape, the way the
+ * query in `content-api.ts` selects them. The web-only and desktop-only
+ * fields below are optional for that reason, not because the API omits them
+ * for a given node — a web node always has `url`/`viewSettings`/etc, a
+ * desktop node always has `desktopPath`, and so on.
+ */
 export interface ContentNode {
 	uuid: string;
 	id: string;
@@ -120,8 +128,21 @@ export interface ContentNode {
 	featured?: boolean;
 	icon?: string;
 	createdAt?: string;
+	customLabel?: string;
+	/** Present on every node, but excluded from `contentNodeToFdc3Application` — see there for why. */
+	access?: Access;
+	// --- web only ---
 	url?: string;
 	urls?: string[];
+	hereApiAccess?: boolean;
+	allowDuplication?: boolean;
+	allowOpenWithDefaultBrowser?: boolean;
+	useAIContext?: boolean;
+	enableSimpleWindow?: boolean;
+	viewSettings?: ViewSettings;
+	environmentAvailability?: EnvironmentAvailability;
+	dataLossPreventionSettings?: DlpSettings;
+	// --- desktop only ---
 	desktopPath?: string;
 	desktopArgs?: string[];
 	withSnap?: boolean;

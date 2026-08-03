@@ -1090,6 +1090,14 @@ td,
 	grid-column: 1 / -1;
 }
 
+.actions-label {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: var(--brand-text-secondary);
+}
+
 .log {
 	display: flex;
 	flex-direction: column;
