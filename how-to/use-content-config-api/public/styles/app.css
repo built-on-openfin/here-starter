@@ -1222,3 +1222,23 @@ td,
 #btnSignIn.hidden {
 	display: none;
 }
+
+/* signInControls is display:flex via .row, so .hidden needs the same override. */
+#signInControls.hidden {
+	display: none;
+}
+
+.auth-or {
+	font-size: 11px;
+	color: var(--brand-text-secondary);
+}
+
+.jwt-input {
+	width: 220px;
+	min-width: 0;
+}
+
+.auth-id-input {
+	width: 130px;
+	min-width: 0;
+}

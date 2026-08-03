@@ -19,7 +19,27 @@
 			</div>
 			<div class="row middle gap10">
 				<span class="endpoint">POST&nbsp;<b id="endpoint">/here/api/graphql</b></span>
-				<button id="btnSignIn">Sign in</button>
+				<span id="signInControls" class="row middle gap10">
+					<button id="btnSignIn">Sign in</button>
+					<span class="auth-or">or</span>
+					<input
+						id="f-jwt"
+						type="password"
+						class="jwt-input"
+						placeholder="Paste API JWT"
+						autocomplete="off"
+						spellcheck="false"
+					/>
+					<input
+						id="f-auth-id"
+						type="text"
+						class="auth-id-input"
+						placeholder="Auth ID (if needed)"
+						autocomplete="off"
+						spellcheck="false"
+					/>
+					<button id="btnSignInJwt" class="secondary">Use JWT</button>
+				</span>
 				<span id="authState" class="auth-state hidden">
 					<span class="auth-pill">Signed in</span>
 					<button id="btnSignOut" class="plain small">Sign out</button>

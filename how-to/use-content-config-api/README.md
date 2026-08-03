@@ -6,9 +6,9 @@ This how-to shows how to manage your HERE application directory programmatically
 **Content Configuration API** — a single GraphQL endpoint serving both queries and mutations for
 full create/read/update/delete. It includes two things:
 
-1. A **browser UI** that signs in with OAuth 2.0, shapes an app definition, and runs the
-   create → validate → update → delete lifecycle against your directory, logging every request
-   and response.
+1. A **browser UI** that signs in with OAuth 2.0 (or an API JWT pasted in directly, as a stopgap —
+   see below), shapes an app definition, and runs the create → validate → update → delete
+   lifecycle against your directory, logging every request and response.
 2. A **config-as-code sync script** that reconciles an [FDC3 2.0 App Directory](https://fdc3.finos.org/docs/app-directory/overview)
    manifest (`apps.config.json`) against your live directory.
 
@@ -29,7 +29,7 @@ Which credential you use depends on whether a human is present to sign in.
 | Credential | Provider | Use it for | Why |
 | --- | --- | --- | --- |
 | OAuth access token | `BearerTokenAuth` | Browser apps, with a user present | Obtained at runtime, so nothing secret ships in your bundle. The token carries the signed-in user's access |
-| Org API JWT | `BearerTokenAuth` + `x-of-auth-id` | Scripts, CI, anything headless | There is no user to redirect through a sign-in screen |
+| Org API JWT | `BearerTokenAuth` + `x-of-auth-id` | Scripts, CI, anything headless — or the browser UI as a stopgap while OAuth public clients aren't available | There is no user to redirect through a sign-in screen (script), or OAuth isn't an option yet (UI) |
 | `here-session` cookie | `CookieHeaderAuth` | Local scripts only | Convenient for a quick local run; a browser cannot send it (see below) |
 
 Both token types travel the same way — `Authorization: Bearer <token>` — which is why one provider
@@ -41,6 +41,26 @@ HERE org cannot send the cookie: the API answers CORS preflights with
 wildcard origin on any credentialed request. A bearer token rides in a plain header, which the
 CORS policy permits. The cookie still works from Node, which has no CORS engine, so
 `CookieHeaderAuth` remains an option for the script.
+
+## Signing in with a JWT instead of OAuth (stopgap)
+
+If OAuth public clients aren't available in your org yet, the UI has a second, always-available
+sign-in path: paste an API JWT — the same credential the sync script uses — into the field next to
+**Sign in** and choose **Use JWT**. It bypasses the OAuth handshake entirely and authenticates the
+same way the script does. No `HERE_OAUTH_CLIENT_ID` or registered OAuth app is needed for this path.
+
+This is a stopgap, not the intended flow: a JWT is a real credential, and unlike an OAuth token it
+isn't scoped to a consenting user or obtained at runtime. Don't leave it sitting in the field on a
+shared screen, and don't paste it into a page you don't trust — the field is `type="password"` but
+that only masks the display, it doesn't protect the value in any other way. It is held in memory
+only, same as an OAuth token: reloading the page signs you out.
+
+**The Auth ID field.** Set this to the same value you'd put in `HERE_AUTH_ID` for the sync script
+(see below) — it is sent as the `x-of-auth-id` header. The API docs describe this as required only
+when your org has more than one authentication provider configured, but in practice we found an org
+that rejected the JWT with `NOT_AUTHENTICATED` until this header was set even with what looked like
+a single provider. If your `HERE_API_JWT` works from the script but the UI reports `NOT_AUTHENTICATED`
+with the same token, set the Auth ID field before assuming anything else is wrong.
 
 ## Registering an OAuth app
 
@@ -155,8 +175,8 @@ CI can inject them directly instead.
 | --- | --- | --- |
 | `BASE_URL` | UI, script | Your HERE domain, no trailing slash |
 | `HERE_OAUTH_CLIENT_ID` | UI | Client id of your registered OAuth app. Not a secret |
-| `HERE_API_JWT` | script | API JWT bearer token. Treat as a secret |
-| `HERE_AUTH_ID` | script | Authentication provider id; only if your org has several |
+| `HERE_API_JWT` | script | API JWT bearer token. Treat as a secret. The UI has its own JWT sign-in path too, but it's a runtime paste, not a build-time value — see below, it deliberately does **not** read this variable |
+| `HERE_AUTH_ID` | script | Authentication provider id. Nominally required only if your org has several — in practice, set it whenever your administrator gives you one, even if your org appears to have just one (see below) |
 | `HERE_SESSION` | script | `here-session` cookie value — a local alternative to the JWT |
 
 ## Running the guided UI
@@ -173,6 +193,9 @@ CI can inject them directly instead.
    done that yet.
 4. Choose **Sign in**. You will be redirected to your organization's sign-in, then to a consent
    screen the first time. After that you land back on the page, signed in.
+
+   No OAuth app registered yet? Paste an API JWT into the field next to **Sign in** instead and
+   choose **Use JWT** — see "Signing in with a JWT instead of OAuth" above.
 5. Edit the app definition on the left, then run **List all apps** or any of
    **Create / Validate / Update / Delete** — each request and its response is logged on the right.
    The form defaults to a `here-io` demo app; **Validate** loads an existing app's live values back
@@ -224,6 +247,7 @@ tools → Application → Cookies → copy the `here-session` value.
 | `401` on an API call after signing in successfully | The access token expired. Sign in again |
 | `403` on writes | The signed-in user lacks content admin access in this org |
 | The script reports no credential | Set `HERE_API_JWT` (or `HERE_SESSION`) in `.env` — the script cannot use OAuth |
+| UI JWT sign-in reports `NOT_AUTHENTICATED` | Set the Auth ID field to the same value as `HERE_AUTH_ID`. Some orgs require `x-of-auth-id` even though it's nominally optional — see "Signing in with a JWT instead of OAuth" |
 
 ## What to copy into your own app
 

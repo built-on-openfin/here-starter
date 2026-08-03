@@ -17,6 +17,11 @@ import type { ContentNode, ContentUpdate, Fdc3Application } from "../../shared/s
  * Neither value is a secret. The client id is public by design, and the UI has
  * no token until the user signs in through HERE, so nothing sensitive is
  * readable in this bundle.
+ *
+ * `HERE_API_JWT` is deliberately NOT injected here even though it is also read
+ * from `.env`: it is a real credential, unlike these two, and this bundle is
+ * readable by anyone who loads the page. The JWT sign-in path below takes the
+ * token from a field the user pastes into at runtime instead.
  */
 const BASE_URL = process.env.BASE_URL ?? "";
 const CLIENT_ID = process.env.HERE_OAUTH_CLIENT_ID ?? "";
@@ -47,11 +52,18 @@ function initializeDOM(): void {
 
 	const ACTION_IDS = ["#btnList", "#btnCreate", "#btnValidate", "#btnUpdate", "#btnDelete"];
 
-	function setSignedIn(token: string | undefined): void {
+	/**
+	 * `authConfigId` only applies to a pasted API JWT — never pass it for an
+	 * OAuth token, which HERE validates itself (see `BearerTokenAuth`).
+	 */
+	function setSignedIn(token: string | undefined, authConfigId?: string): void {
 		client =
 			token === undefined
 				? undefined
-				: new ContentApiClient({ baseUrl: BASE_URL, auth: new BearerTokenAuth(token) });
+				: new ContentApiClient({
+						baseUrl: BASE_URL,
+						auth: new BearerTokenAuth(token, authConfigId)
+					});
 
 		for (const id of ACTION_IDS) {
 			const button = document.querySelector<HTMLButtonElement>(id);
@@ -59,7 +71,7 @@ function initializeDOM(): void {
 				button.disabled = token === undefined;
 			}
 		}
-		document.querySelector("#btnSignIn")?.classList.toggle("hidden", token !== undefined);
+		document.querySelector("#signInControls")?.classList.toggle("hidden", token !== undefined);
 		document.querySelector("#authState")?.classList.toggle("hidden", token === undefined);
 	}
 
@@ -233,6 +245,21 @@ function initializeDOM(): void {
 	}
 
 	/**
+	 * The JWT sign-in path needs `BASE_URL` to call the API, but not
+	 * `HERE_OAUTH_CLIENT_ID` — there is no OAuth app involved.
+	 */
+	function baseUrlConfigured(): boolean {
+		if (BASE_URL === "") {
+			notice(
+				"BASE_URL not set in .env. Add it and re-run npm run start to rebuild. See the README.",
+				"error"
+			);
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Run one API call, logging the request and resolving it to OK or error.
 	 *
 	 * The client is handed to the callback rather than read from the closure, so
@@ -278,6 +305,47 @@ function initializeDOM(): void {
 		setSignedIn(undefined);
 		notice("Signed out.", "info");
 	});
+
+	/**
+	 * Stopgap for orgs where OAuth public clients aren't available yet
+	 * (see the README): sign in with an API JWT pasted straight into the page
+	 * instead of running the OAuth handshake. Same in-memory-only lifetime as an
+	 * OAuth token — nothing is persisted, so a reload signs you out.
+	 */
+	function signInWithPastedJwt(): void {
+		if (!baseUrlConfigured()) {
+			return;
+		}
+		const jwtInput = document.querySelector<HTMLInputElement>("#f-jwt");
+		const jwt = jwtInput?.value.trim() ?? "";
+		if (jwt === "") {
+			notice("Paste an API JWT first.", "error");
+			return;
+		}
+		const authIdInput = document.querySelector<HTMLInputElement>("#f-auth-id");
+		const authId = authIdInput?.value.trim() ?? "";
+		if (jwtInput !== null) {
+			jwtInput.value = "";
+		}
+		if (authIdInput !== null) {
+			authIdInput.value = "";
+		}
+		setSignedIn(jwt, authId === "" ? undefined : authId);
+		notice(
+			"Signed in with a pasted JWT. This bypasses OAuth entirely — treat the token as a " +
+				"secret, and don't leave it sitting in the field on a shared screen.",
+			"info"
+		);
+	}
+
+	document.querySelector("#btnSignInJwt")?.addEventListener("click", signInWithPastedJwt);
+	for (const id of ["#f-jwt", "#f-auth-id"]) {
+		document.querySelector(id)?.addEventListener("keydown", (e) => {
+			if ((e as KeyboardEvent).key === "Enter") {
+				signInWithPastedJwt();
+			}
+		});
+	}
 
 	document.querySelector("#f-type")?.addEventListener("change", applyTypeVisibility);
 
@@ -375,10 +443,15 @@ function initializeDOM(): void {
 	// Printed before the configuration check, deliberately: you need this value
 	// to register the OAuth app that issues the client id, so it cannot depend
 	// on already having one.
-	notice(`Register this exact redirect URI in your admin console: ${redirectUri()}`, "info");
+	notice(`OAuth redirect URI for OAuth app registration: ${redirectUri()}`, "info");
 
 	if (configured()) {
 		notice(`Not signed in. Choose "Sign in" to authorize this page.`, "info");
+	} else {
+		notice(
+			'OAuth is not configured, to use JWT instead paste an API JWT above',
+			"info"
+		);
 	}
 }
 

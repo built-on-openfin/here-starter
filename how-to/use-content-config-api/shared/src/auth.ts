@@ -22,7 +22,7 @@ export interface CredentialProvider {
 /**
  * Sends a bearer token in the `Authorization` header.
  *
- * This one provider covers both credentials the API accepts:
+ * This one provider covers every credential the API accepts:
  *
  * - An **OAuth access token** the browser UI obtained via authorization code +
  *   PKCE. HERE issued it, so no `authConfigId` is passed.
@@ -30,6 +30,9 @@ export interface CredentialProvider {
  *   organization, used by the sync script. When an org has more than one such
  *   provider, `authConfigId` is sent as `x-of-auth-id` so the gateway knows
  *   which one to validate against.
+ * - That same **org API JWT pasted into the browser UI** as a stopgap for orgs
+ *   where OAuth public clients aren't available yet. It travels identically to
+ *   the OAuth case; only how the page obtained it differs.
  *
  * Do not send `authConfigId` with a HERE-issued OAuth token: that header selects
  * among externally configured providers, and HERE validates its own tokens.
