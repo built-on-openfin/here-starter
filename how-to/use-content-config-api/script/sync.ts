@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ContentApiClient } from "../shared/src/content-api";
-import { fdc3ToContentInput } from "../shared/src/fdc3-mapping";
-import type { AppDirectory, ContentInput, ContentNode, ContentUpdate } from "../shared/src/types";
+import { isDeepStrictEqual } from "node:util";
+import { ContentApiClient, toContentUpdate } from "../shared/src/content-api";
+import { contentNodeToFdc3Application, fdc3ToContentInput } from "../shared/src/fdc3-mapping";
+import type { AppDirectory, ContentInput, ContentNode } from "../shared/src/types";
 import { loadDotEnv, resolveAuth } from "./env";
 
 loadDotEnv();
@@ -25,20 +26,54 @@ export interface SyncPlan {
 	toCreate: ContentInput[];
 	toUpdate: { uuid: string; desired: DesiredApp }[];
 	toDelete: { uuid: string; contentId: string }[];
+	unchanged: number;
 }
 
-/** Compute create/update/delete actions. Deletes only occur when prune is true. */
+/**
+ * Whether the live node already says what the manifest asks for.
+ *
+ * Both sides are compared as update bodies: the node is mapped back through
+ * `contentNodeToFdc3Application` and forward again, so it arrives in exactly
+ * the shape the manifest produces and only real differences show up. Access is
+ * compared only when the manifest declares it — an undeclared access block
+ * means "leave it alone", not "must be empty".
+ *
+ * A node that cannot be mapped back (a desktop app with no path, say) counts
+ * as different, so it lands in the update phase rather than being skipped.
+ */
+function matchesLive(desired: DesiredApp, node: ContentNode): boolean {
+	let liveInput: ContentInput;
+	try {
+		liveInput = fdc3ToContentInput(contentNodeToFdc3Application(node));
+	} catch {
+		return false;
+	}
+
+	if (!isDeepStrictEqual(toContentUpdate(liveInput), toContentUpdate(desired.input))) {
+		return false;
+	}
+	return desired.declaresAccess ? isDeepStrictEqual(node.access, desired.input.access) : true;
+}
+
+/**
+ * Compute create/update/delete actions. Apps that already match the manifest
+ * are counted, not updated, so a directory in sync is a no-op. Deletes only
+ * occur when prune is true.
+ */
 export function computePlan(desired: DesiredApp[], live: ContentNode[], prune: boolean): SyncPlan {
 	const liveById = new Map(live.map((node) => [node.id, node]));
 	const desiredIds = new Set(desired.map((d) => d.input.contentId));
 
 	const toCreate: ContentInput[] = [];
 	const toUpdate: { uuid: string; desired: DesiredApp }[] = [];
+	let unchanged = 0;
 
 	for (const app of desired) {
 		const existing = liveById.get(app.input.contentId);
 		if (existing === undefined) {
 			toCreate.push(app.input);
+		} else if (matchesLive(app, existing)) {
+			unchanged += 1;
 		} else {
 			toUpdate.push({ uuid: existing.uuid, desired: app });
 		}
@@ -48,7 +83,7 @@ export function computePlan(desired: DesiredApp[], live: ContentNode[], prune: b
 		? live.filter((node) => !desiredIds.has(node.id)).map((node) => ({ uuid: node.uuid, contentId: node.id }))
 		: [];
 
-	return { toCreate, toUpdate, toDelete };
+	return { toCreate, toUpdate, toDelete, unchanged };
 }
 
 /** Read and parse `apps.config.json` from the workspace root. */
@@ -73,6 +108,9 @@ function printPlan(plan: SyncPlan): void {
 	}
 	if (plan.toCreate.length + plan.toUpdate.length + plan.toDelete.length === 0) {
 		console.log("  (no changes)");
+	}
+	if (plan.unchanged > 0) {
+		console.log(`  ${plan.unchanged} app(s) already up to date`);
 	}
 }
 
@@ -119,7 +157,10 @@ async function main(): Promise<void> {
 	}
 	if (plan.toUpdate.length > 0) {
 		await client.updateContents(
-			plan.toUpdate.map((u) => ({ identifier: u.uuid, update: toUpdatePayload(u.desired) }))
+			plan.toUpdate.map((u) => ({
+				identifier: u.uuid,
+				update: toContentUpdate(u.desired.input, { keepAccess: u.desired.declaresAccess })
+			}))
 		);
 		console.log(`updated ${plan.toUpdate.length} app(s)`);
 	}
@@ -127,21 +168,6 @@ async function main(): Promise<void> {
 		await client.deleteContents(plan.toDelete.map((d) => d.uuid));
 		console.log(`deleted ${plan.toDelete.length} app(s)`);
 	}
-}
-
-/**
- * Build the partial update body for one app.
- *
- * `contentType` and `contentId` identify the app and cannot be changed, so they
- * are dropped. `access` is dropped too unless the manifest declared it: the
- * mapper defaults to `{ subjects: [], primitives: [] }`, and sending that would
- * strip every existing assignment rather than leave it alone.
- */
-export function toUpdatePayload(desired: DesiredApp): ContentUpdate {
-	const { contentType, contentId, access, ...rest } = desired.input;
-	void contentType;
-	void contentId;
-	return desired.declaresAccess ? { ...rest, access } : rest;
 }
 
 // Run main only when invoked directly (not when imported by tests).

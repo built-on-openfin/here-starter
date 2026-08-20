@@ -121,6 +121,7 @@ export function contentNodeToFdc3Application(node: ContentNode): Fdc3Application
 			type: "native",
 			details: { path: node.desktopPath, arguments: node.desktopArgs },
 			icons: node.icon === undefined ? undefined : [{ src: node.icon }],
+			interop: node.interop,
 			hostManifests: { here: { ...here, withSnap: node.withSnap ?? false } }
 		};
 	}
@@ -135,6 +136,8 @@ export function contentNodeToFdc3Application(node: ContentNode): Fdc3Application
 		// UI's "Validate" already makes when it loads a node back into the form.
 		details: { url: node.url ?? node.urls?.[0] },
 		icons: node.icon === undefined ? undefined : [{ src: node.icon }],
+		// Intent declarations round-trip as-is, so an exported manifest keeps them.
+		interop: node.interop,
 		hostManifests: {
 			here: {
 				...here,

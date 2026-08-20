@@ -21,7 +21,12 @@ const DEFAULT_OUT = "apps.config.json";
 async function main(): Promise<void> {
 	const args = process.argv.slice(2);
 	const outIndex = args.indexOf("--out");
-	const outPath = outIndex !== -1 ? args[outIndex + 1] : DEFAULT_OUT;
+	const outPath = outIndex === -1 ? DEFAULT_OUT : args[outIndex + 1];
+	if (outPath === undefined) {
+		console.error("--out needs a file path, e.g. --out my-other-org.json");
+		process.exit(1);
+		return;
+	}
 
 	const baseUrl = process.env.BASE_URL ?? "";
 	if (baseUrl === "") {

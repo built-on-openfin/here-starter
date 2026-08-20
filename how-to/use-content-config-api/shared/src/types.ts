@@ -80,9 +80,7 @@ export interface DesktopContentInput {
 	access: Access | null;
 }
 
-/**
- *
- */
+/** Create/update body for either kind of app. */
 export type ContentInput = DesktopContentInput | WebContentInput;
 
 /** Shape selected back from the create/update mutations. */
@@ -144,6 +142,7 @@ export interface ContentNode {
 	viewSettings?: ViewSettings;
 	environmentAvailability?: EnvironmentAvailability;
 	dataLossPreventionSettings?: DlpSettings;
+	interop?: InteropSettings;
 	// --- desktop only ---
 	desktopPath?: string;
 	desktopArgs?: string[];

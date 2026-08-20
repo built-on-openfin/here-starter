@@ -1,5 +1,5 @@
 import { BearerTokenAuth } from "../../shared/src/auth";
-import { ContentApiClient } from "../../shared/src/content-api";
+import { ContentApiClient, ENDPOINT_PATH, toContentUpdate } from "../../shared/src/content-api";
 import { ContentApiError } from "../../shared/src/errors";
 import { contentNodeToFdc3Application, fdc3ToContentInput } from "../../shared/src/fdc3-mapping";
 import {
@@ -25,9 +25,6 @@ import type { AppDirectory, ContentNode, ContentUpdate, Fdc3Application } from "
  */
 const BASE_URL = process.env.BASE_URL ?? "";
 const CLIENT_ID = process.env.HERE_OAUTH_CLIENT_ID ?? "";
-
-/** Every request — read or write — goes to this one endpoint. */
-const ENDPOINT_PATH = "/here/api/graphql";
 
 /** The editable fields, read straight off the form. */
 interface FormState {
@@ -123,17 +120,11 @@ function initializeDOM(): void {
 	}
 
 	/**
-	 * Build a partial update from the form. Identity fields cannot change, and
-	 * access is dropped deliberately: the mapper defaults it to an empty object,
-	 * and sending that would wipe an app's existing assignments. The form has no
-	 * access editor, so it never touches access.
+	 * Build a partial update from the form. The form has no access editor, so
+	 * access is left out and an app's existing assignments stay untouched.
 	 */
 	function buildUpdate(form: FormState): ContentUpdate {
-		const { contentType, contentId, access, ...rest } = fdc3ToContentInput(buildApp(form));
-		void contentType;
-		void contentId;
-		void access;
-		return rest;
+		return toContentUpdate(fdc3ToContentInput(buildApp(form)));
 	}
 
 	/** Fill the form from a fetched app, so Validate loads real values to edit. */

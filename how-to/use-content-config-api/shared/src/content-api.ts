@@ -29,7 +29,7 @@ interface ContentsQueryData {
 }
 
 /** Every request goes to this one endpoint — reads and writes alike. */
-const ENDPOINT = "/here/api/graphql";
+export const ENDPOINT_PATH = "/here/api/graphql";
 
 /**
  * Selects every field `fdc3ToContentInput` can write, so a node round-trips
@@ -46,11 +46,28 @@ const NODE_FIELDS =
 	"environmentAvailability { enableHereEB enableHereZero enableHereMobile } " +
 	"viewSettings { navigationControls reloadControl } " +
 	"dataLossPreventionSettings { copyBehavior pasteBehavior screenCaptureBehavior printBehavior } " +
+	"interop " +
 	"} " +
-	"... on DesktopContent { desktopPath desktopArgs withSnap }";
+	"... on DesktopContent { desktopPath desktopArgs withSnap interop }";
 
 /** Fields selected back from create/update mutations. */
 const WRITE_FIELDS = "uuid id name type active featured";
+
+/**
+ * Shape a full create body into a partial update body.
+ *
+ * `contentType` and `contentId` identify an app and cannot be changed, so they
+ * are always dropped. `access` is dropped unless `keepAccess` is set: callers
+ * that build an input from a manifest or a form get the mapper's default of
+ * `{ subjects: [], primitives: [] }`, and sending that would strip every
+ * existing assignment rather than leave it alone.
+ */
+export function toContentUpdate(input: ContentInput, options?: { keepAccess?: boolean }): ContentUpdate {
+	const { contentType, contentId, access, ...rest } = input;
+	void contentType;
+	void contentId;
+	return options?.keepAccess === true ? { ...rest, access } : rest;
+}
 
 /**
  * The API rejects an update with no fields, so fail early with a clearer message.
@@ -208,7 +225,7 @@ export class ContentApiClient {
 	/** Send one GraphQL request and unwrap its `data`, throwing on any error shape. */
 	private async graphql<T>(query: string, variables?: { [key: string]: unknown }): Promise<T> {
 		const auth = await this.auth.apply();
-		const response = await this.fetchImpl(`${this.baseUrl}${ENDPOINT}`, {
+		const response = await this.fetchImpl(`${this.baseUrl}${ENDPOINT_PATH}`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json", ...auth.headers },
 			credentials: auth.credentials,

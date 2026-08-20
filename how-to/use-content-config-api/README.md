@@ -1,6 +1,5 @@
 # Content Configuration API How-To
 
-
 Your HERE application directory — the apps your users see, and the settings that decide how each one
 behaves — is normally maintained by hand in the Admin Console. The **Content Configuration API**
 exposes that same directory programmatically: a single GraphQL endpoint serving both queries and
@@ -221,8 +220,10 @@ The action buttons stay disabled until you sign in, because without a token ever
 ## Running the config-as-code sync script
 
 The script reads `apps.config.json` (an FDC3 App Directory), compares it with your live directory,
-and prints a plan. It picks up credentials from the same `.env` file, so you don't need to `export`
-them into your shell, and it is a **dry run by default**.
+and prints a plan. Apps that already match are reported as up to date rather than rewritten, so
+re-running against a directory that is already in sync does nothing. It picks up credentials from
+the same `.env` file, so you don't need to `export` them into your shell, and it is a **dry run by
+default**.
 
 ```shell
 # preview changes (no writes)
