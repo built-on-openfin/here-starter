@@ -59,10 +59,16 @@
 
 		<main class="console">
 			<div class="stack">
-				<section class="panel">
-					<div class="panel__head">
-						<span class="panel__title">App definition</span>
-					</div>
+				<!-- Collapsible through the native details/summary elements, so keyboard
+				     and screen-reader support come for free with no JS. Both start open:
+				     collapsing is there to let you park the half you are not using, not
+				     to hide anything on a first visit. Open/closed state is not
+				     persisted — a reload signs you out anyway. -->
+				<details class="panel" open>
+					<summary class="panel__head">
+						<span class="panel__title">App Management</span>
+						<span class="panel__chevron" aria-hidden="true"></span>
+					</summary>
 					<div class="panel__body">
 						<div class="editor">
 							<div class="field">
@@ -141,12 +147,13 @@
 							</div>
 						</div>
 					</div>
-				</section>
+				</details>
 
-				<section class="panel">
-					<div class="panel__head">
-						<span class="panel__title">User management</span>
-					</div>
+				<details class="panel" open>
+					<summary class="panel__head">
+						<span class="panel__title">User Management</span>
+						<span class="panel__chevron" aria-hidden="true"></span>
+					</summary>
 					<div class="panel__body">
 						<div class="editor">
 							<div class="actions">
@@ -214,7 +221,7 @@
 							</div>
 						</div>
 					</div>
-				</section>
+				</details>
 			</div>
 
 			<section class="panel">

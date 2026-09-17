@@ -1051,6 +1051,51 @@ td,
 	border-bottom: 1px solid var(--brand-border);
 }
 
+/* A collapsible panel is a <details>. Block rather than flex: `display: flex`
+   on <details> has a history of breaking the disclosure in some engines, and
+   the panels size to their content here anyway. */
+details.panel {
+	display: block;
+}
+
+/* `.panel__head` on a <summary> is the click target. The default triangle is
+   replaced by `.panel__chevron`, which can follow the theme. */
+summary.panel__head {
+	cursor: pointer;
+	user-select: none;
+	list-style: none;
+}
+
+summary.panel__head::-webkit-details-marker {
+	display: none;
+}
+
+summary.panel__head:hover {
+	background-color: var(--brand-input-background);
+}
+
+/* A collapsed panel has no body under it, so its head should not draw a
+   divider into empty space. */
+details.panel:not([open]) > summary.panel__head {
+	border-bottom-color: transparent;
+}
+
+.panel__chevron {
+	width: 7px;
+	height: 7px;
+	flex: none;
+	margin-right: 2px;
+	border-right: 2px solid var(--brand-text-secondary);
+	border-bottom: 2px solid var(--brand-text-secondary);
+	/* Points down when collapsed, up when open. */
+	transform: rotate(45deg);
+	transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+details.panel[open] > summary.panel__head .panel__chevron {
+	transform: rotate(-135deg);
+}
+
 .panel__title {
 	font-size: 13px;
 	font-weight: 600;
