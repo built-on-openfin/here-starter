@@ -48,8 +48,19 @@ const DISCOVERY_PATH = "/.well-known/oauth-authorization-server";
 const VERIFIER_KEY = "here-oauth-verifier";
 const STATE_KEY = "here-oauth-state";
 
-/** Falls back to the one scope the server currently offers. */
-const DEFAULT_SCOPE = "full";
+/**
+ * The one scope this sample needs: it lets the page call HERE Cloud APIs on the
+ * signed-in user's behalf.
+ *
+ * Deliberately a fixed value rather than something read out of the discovery
+ * document. RFC 8414's `scopes_supported` lists what the *authorization server*
+ * supports in aggregate, not what a *client* is permitted to request — a HERE
+ * org also advertises `offline_access` and `app_default`. Asking for scopes the
+ * registered app was not granted fails the whole authorization with
+ * `invalid_scope`, and this sample wants neither of those: the token is held in
+ * memory only and there is no refresh grant.
+ */
+const SCOPE = "full";
 
 let cached: { baseUrl: string; metadata: OAuthMetadata } | undefined;
 
@@ -108,6 +119,18 @@ export function hasAuthorizationResponse(): boolean {
  */
 export async function beginSignIn(baseUrl: string, clientId: string): Promise<void> {
 	const metadata = await discover(baseUrl);
+
+	// Checked up front so a server that does not offer this scope produces an
+	// actionable message here, rather than an `invalid_scope` redirect after the
+	// user has already been sent away to sign in.
+	if (metadata.scopes_supported !== undefined && !metadata.scopes_supported.includes(SCOPE)) {
+		throw new OAuthError(
+			`This organization does not advertise the "${SCOPE}" scope (it offers: ` +
+				`${metadata.scopes_supported.join(", ")}). Ask your HERE administrator which ` +
+				"scope your OAuth app should request."
+		);
+	}
+
 	const verifier = randomString(32);
 	const state = randomString(16);
 
@@ -121,7 +144,7 @@ export async function beginSignIn(baseUrl: string, clientId: string): Promise<vo
 	params.set("response_type", "code");
 	params.set("client_id", clientId);
 	params.set("redirect_uri", redirectUri());
-	params.set("scope", (metadata.scopes_supported ?? [DEFAULT_SCOPE]).join(" "));
+	params.set("scope", SCOPE);
 	params.set("state", state);
 	params.set("code_challenge", await challengeFor(verifier));
 	params.set("code_challenge_method", "S256");

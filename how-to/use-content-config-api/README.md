@@ -27,6 +27,11 @@ That turns directory administration into something you can automate:
    manifest (`apps.config.json`) against your live directory, plus an **export script** (and a UI
    button) that does the reverse: dump a live directory into that same manifest shape, e.g. to
    carry it into another environment.
+3. A **user management panel** in the same UI, using the User and Group API on the same GraphQL
+   endpoint: list users and groups, inspect the groups a user belongs to, add them to a group, and
+   switch them from one group to another. See "Managing users and groups" below — group membership
+   behaves differently from app configuration in one important way, and the panel is built around
+   that difference.
 
 > Auth is a pluggable `CredentialProvider` (`shared/src/auth.ts`), so the browser and the script
 > authenticate differently without either one changing a line of CRUD code.
@@ -113,9 +118,29 @@ sequence, so nothing is circular.
 The client id is **not** a secret — it is public by design. A browser app needs no client secret at
 all; see below.
 
-If the token exchange fails asking for a client secret, check the discovery document:
-`token_endpoint_auth_methods_supported` must include `none` for a client that authenticates without
-one. Ask your HERE administrator rather than embedding a secret in the page.
+### "Invalid client: client is invalid" on the token exchange
+
+This means the token endpoint wanted client authentication and the page sent none — which is the
+only thing a browser app _can_ send. Check the **Client Secrets** panel on the app's page in the
+Admin Console. If it shows a warning that a non-expired client secret is required before the app
+can acquire access tokens, the app is registered as a **confidential** client and needs to be a
+public one instead.
+
+Confirm the authorization server itself allows that, which it does if the discovery document lists
+`none`:
+
+```json
+"token_endpoint_auth_methods_supported": ["client_secret_post", "none"]
+```
+
+`none` is the public-client method PKCE depends on, so when it is advertised the restriction is on
+the app registration rather than the org.
+
+**Do not add a client secret to make the error go away.** The client id and everything beside it
+are inlined into the bundle at build time and readable by anyone who loads the page, so a secret
+there protects nothing while creating a real credential to leak. If the console gives you no way to
+register a public client, ask your HERE administrator — and use the **Use JWT** sign-in path
+described above to exercise the API in the meantime.
 
 ## How the OAuth flow works
 
@@ -164,9 +189,21 @@ useless without the verifier, which never leaves the page that generated it.
 
 ## Scopes and token lifetime
 
-**Scopes.** Request whatever the discovery document's `scopes_supported` advertises rather than
-hardcoding a scope name — that way narrower scopes work without a code change. `full` lets the
-application call HERE Cloud APIs on the signed-in user's behalf.
+**Scopes.** Request only the scopes your application actually needs. This sample asks for exactly
+one, `full`, which lets it call HERE Cloud APIs on the signed-in user's behalf.
+
+Do **not** request everything the discovery document lists in `scopes_supported`. That field is the
+set of scopes the _authorization server_ supports in aggregate — not the set your _client_ is
+permitted to ask for. A HERE org typically advertises `full`, `offline_access` and `app_default`,
+while a newly registered app is granted a subset. Requesting a scope the app was not granted fails
+the entire authorization with:
+
+```text
+invalid_scope: one or more requested scopes are not permitted for this client
+```
+
+If you hit that error, check the scope your code sends against the grants on your OAuth app in the
+Admin Console, and ask your administrator which scopes it should have.
 
 **Lifetime.** This sample holds the access token **in memory only**. Reloading the page signs you
 out, which is deliberate: it keeps a live credential out of `localStorage`, where any script on the
@@ -216,6 +253,77 @@ CI can inject them directly instead.
    into the form so you can edit and re-apply them.
 
 The action buttons stay disabled until you sign in, because without a token every call would fail.
+
+## Managing users and groups
+
+The **User management** panel drives the User and Group API, which lives on the same GraphQL
+endpoint and uses the same credential as everything above — no second sign-in, no second client
+configuration.
+
+1. Choose **Load users & groups**. Both lists are read with cursor pagination and cached for the
+   session, because the pickers are rebuilt on every selection.
+2. Pick a user. The panel reads that one user back with their memberships and lists them.
+3. **Add to group** adds a single membership. **Remove** next to any group drops that one.
+4. **Switch group** moves the user from one group to another. **From** offers only groups the user
+   is currently in, and **To** only groups they are not, so the picker cannot express a switch that
+   could not work.
+
+Every call is logged in the Activity panel with the mutation it used, so the panel doubles as a
+worked example of the request shapes.
+
+### Group membership is a set, not a slot
+
+A user belongs to **many** groups at once — `User.groups` is a connection, not a single field — so
+there is no "the user's group" to overwrite. Every operation is add or remove on one membership.
+
+### There is no atomic move, and that shapes everything
+
+The API exposes exactly four membership mutations:
+
+| Mutation               | Arguments                                         | Returns                           |
+| ---------------------- | ------------------------------------------------- | --------------------------------- |
+| `addUserToGroup`       | `userIdentifier: ID!`, `groupIdentifier: ID!`     | `User!`                           |
+| `removeUserFromGroup`  | `userIdentifier: ID!`, `groupIdentifier: ID!`     | `User!`                           |
+| `addUsersToGroup`      | `userIdentifiers: [ID!]!`, `groupIdentifier: ID!` | `BulkAddUsersToGroupResult!`      |
+| `removeUsersFromGroup` | `userIdentifiers: [ID!]!`, `groupIdentifier: ID!` | `BulkRemoveUsersFromGroupResult!` |
+
+There is no `moveUserToGroup`, `changeUserGroup` or `setUserGroup`. **Switching a group is two
+mutations and is not atomic** — unlike the content API's bulk writes, there is no transaction and
+nothing rolls back. Either half can fail on its own.
+
+`UserApiClient.switchGroup` runs the **add first, then the remove**, deliberately:
+
+- If the add fails, nothing has changed and the call throws — the honest outcome.
+- If the remove fails, the user is in **both** groups: holding slightly more access than intended,
+  and one retried removal away from correct. The result carries `partialFailure` and the UI reports
+  it as a failure naming the step that landed.
+
+Removing first would fail the other way, leaving the user in **neither** group — less access than
+they started with, which in a desktop container means apps vanishing for someone who did nothing
+wrong. Being briefly over-permissioned is the better failure, but it is still a failure, which is
+why it is reported rather than smoothed over.
+
+If you build your own switch, make the same choice explicitly, and re-read the user afterwards
+rather than assuming: after a partial failure the server is the only thing that knows the real
+state.
+
+### Identifiers
+
+`addUserToGroup` and friends take an `ID!` that accepts either form, and the two read queries name
+them separately — `user(id: …)` for the readable identifier, `user(uuid: …)` for the system id.
+This sample sends **uuids** in mutations and displays **ids**, so what you see is recognisable while
+what it sends cannot be ambiguous.
+
+One wrinkle worth knowing: `Group` has **no `name` field**. Its `id` is the human-readable
+identifier (`all-users`, `atlassian-users`) and its `uuid` is the system id. Selecting `name` on a
+group fails the whole query.
+
+### A note on real data
+
+This panel reads your organization's actual user directory — real names and email addresses. The
+sample keeps it in memory for the session and writes none of it to disk, and signing out clears the
+cache. If you extend it to export, remember that a user export is personal data in a way an app
+manifest is not.
 
 ## Running the config-as-code sync script
 
@@ -298,16 +406,22 @@ value.
 | `403` on writes                                     | The signed-in user lacks content admin access in this org                                                                                 |
 | The script reports no credential                    | Set `HERE_API_JWT` (or `HERE_SESSION`) in `.env` — the script cannot use OAuth                                                            |
 | UI JWT sign-in reports `NOT_AUTHENTICATED`          | Set the Auth ID field to the same value as `HERE_AUTH_ID` — it is sent as `x-of-auth-id`. See "Signing in with a JWT instead of OAuth"    |
+| `invalid_scope` on sign-in                          | The app is not granted a scope the request asked for. This sample requests only `full`; check the grants on the OAuth app                 |
+| `Cannot query field "X" on type "Y"`                | Your org's schema does not have that field. Schemas differ between versions — `interop`, for instance, is write-only on some orgs         |
+| A group switch reports "Half-applied"               | The add landed and the remove did not, so the user is in both groups. Retry the removal; see "There is no atomic move"                    |
+| Selecting `name` on a group fails                   | `Group` has no `name` field — use `id` for the readable identifier                                                                        |
 
 ## What's in here
 
 | Path                         | Responsibility                                                   |
 | ---------------------------- | ---------------------------------------------------------------- |
+| `shared/src/graphql.ts`      | GraphQL transport: the endpoint, and the two error envelopes     |
 | `shared/src/content-api.ts`  | Reusable client: GraphQL queries, mutations, and bulk operations |
+| `shared/src/user-api.ts`     | Reusable client: users, groups, and membership changes           |
 | `shared/src/oauth-pkce.ts`   | OAuth 2.0 authorization code + PKCE sign-in (browser only)       |
 | `shared/src/auth.ts`         | Pluggable credential providers (bearer token, session cookie)    |
 | `shared/src/fdc3-mapping.ts` | FDC3 Application <-> HERE content mapping, both directions       |
-| `client/src/index.ts`        | Guided browser UI                                                |
+| `client/src/index.ts`        | Guided browser UI (app definition + user management)             |
 | `script/env.ts`              | Shared `.env` loading and credential resolution for both scripts |
 | `script/sync.ts`             | Config-as-code reconcile: manifest → live directory              |
 | `script/export.ts`           | The reverse: live directory → manifest                           |
@@ -317,5 +431,19 @@ value.
 ## API reference
 
 [Develop with GraphQL](https://resources.here.io/docs/guide/devs/graphql/) covers the endpoint and
-how to introspect the schema — the API is self-documenting, so introspection gives you the full
-field reference for every query, mutation and content type.
+points you at introspection for the full field reference.
+
+Two caveats, both worth knowing before you go looking:
+
+- **Introspection may be disabled on your org.** Apollo Server can be configured with
+  `introspection: false`, and then `__schema` and `__type` are rejected — so the schema explorer in
+  Apollo Sandbox comes up empty, with no field lists and no autocomplete. `__typename` still works.
+  Ask your administrator to enable introspection on a development org; it turns schema questions
+  into a lookup instead of an investigation.
+- **The membership mutations are not on that page.** `addUserToGroup`, `removeUserFromGroup`,
+  `addUsersToGroup` and `removeUsersFromGroup` are documented in the table above instead, with the
+  signatures verified against a live instance.
+
+To open the endpoint in a browser, visit it in a tab where you are already signed in to the Admin
+Console — the session cookie rides along and the server returns the Apollo landing page. `curl`
+gets JSON and a `401` instead, because it does not send `Accept: text/html`.
