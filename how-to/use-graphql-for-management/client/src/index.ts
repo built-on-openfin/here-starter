@@ -9,7 +9,15 @@ import {
 	OAuthError,
 	redirectUri
 } from "../../shared/src/oauth-pkce";
-import type { AppDirectory, ContentNode, ContentUpdate, Fdc3Application } from "../../shared/src/types";
+import type {
+	AppDirectory,
+	ContentNode,
+	ContentUpdate,
+	Fdc3Application,
+	Group,
+	User
+} from "../../shared/src/types";
+import { UserApiClient } from "../../shared/src/user-api";
 
 /**
  * Injected at build time by webpack from `.env` — see `.env.example`.
@@ -42,26 +50,54 @@ interface FormState {
 function initializeDOM(): void {
 	// Held in memory only, so closing or reloading the page ends the session.
 	// There is no refresh grant, so an expired token means signing in again.
+	// Both clients share the one credential and the one endpoint; they are
+	// separate only because they cover two different parts of the schema.
 	let client: ContentApiClient | undefined;
+	let userClient: UserApiClient | undefined;
+
+	// The directory is fetched once per sign-in and cached, because the group
+	// pickers are rebuilt on every selection and mutation.
+	let groups: Group[] = [];
+	let users: User[] = [];
+	/** The selected user's memberships, refreshed after every mutation. */
+	let selectedGroups: Group[] = [];
 
 	const logEl = document.querySelector<HTMLElement>("#log");
 
 	// --- sign-in state ------------------------------------------------------
 
-	const ACTION_IDS = ["#btnList", "#btnExport", "#btnCreate", "#btnValidate", "#btnUpdate", "#btnDelete"];
+	const ACTION_IDS = [
+		"#btnList",
+		"#btnExport",
+		"#btnCreate",
+		"#btnValidate",
+		"#btnUpdate",
+		"#btnDelete",
+		"#btnLoadDirectory"
+	];
+
+	/**
+	 * Controls that need more than a credential: they stay disabled until the
+	 * user and group lists have actually been fetched, because an empty picker
+	 * is worse than a visibly inactive one.
+	 */
+	const DIRECTORY_CONTROL_IDS = [
+		"#f-user",
+		"#f-add-group",
+		"#f-from-group",
+		"#f-to-group",
+		"#btnAddToGroup",
+		"#btnSwitchGroup"
+	];
 
 	/**
 	 * `authConfigId` only applies to a pasted API JWT — never pass it for an
 	 * OAuth token, which HERE validates itself (see `BearerTokenAuth`).
 	 */
 	function setSignedIn(token: string | undefined, authConfigId?: string): void {
-		client =
-			token === undefined
-				? undefined
-				: new ContentApiClient({
-						baseUrl: BASE_URL,
-						auth: new BearerTokenAuth(token, authConfigId)
-					});
+		const auth = token === undefined ? undefined : new BearerTokenAuth(token, authConfigId);
+		client = auth === undefined ? undefined : new ContentApiClient({ baseUrl: BASE_URL, auth });
+		userClient = auth === undefined ? undefined : new UserApiClient({ baseUrl: BASE_URL, auth });
 
 		for (const id of ACTION_IDS) {
 			const button = document.querySelector<HTMLButtonElement>(id);
@@ -69,6 +105,16 @@ function initializeDOM(): void {
 				button.disabled = token === undefined;
 			}
 		}
+		// Signing out must also drop the cached directory: it belongs to the
+		// credential that fetched it, and leaving stale names in the pickers
+		// would imply the page still has access to them.
+		groups = [];
+		users = [];
+		selectedGroups = [];
+		setDirectoryControlsEnabled(false);
+		clearDirectoryPickers();
+		renderMemberships();
+
 		document.querySelector("#signInControls")?.classList.toggle("hidden", token !== undefined);
 		document.querySelector("#authState")?.classList.toggle("hidden", token === undefined);
 	}
@@ -155,6 +201,192 @@ function initializeDOM(): void {
 		if (field !== null) {
 			field.checked = value;
 		}
+	}
+
+	// --- user and group management ------------------------------------------
+
+	/** Enable or disable the controls that need a fetched directory. */
+	function setDirectoryControlsEnabled(enabled: boolean): void {
+		for (const id of DIRECTORY_CONTROL_IDS) {
+			const control = document.querySelector<HTMLButtonElement | HTMLSelectElement>(id);
+			if (control !== null) {
+				control.disabled = !enabled;
+			}
+		}
+	}
+
+	/**
+	 * Reset every directory-backed picker to its placeholder.
+	 *
+	 * Placeholders rather than empty selects: a disabled select with no options
+	 * renders as a blank box with no dropdown arrow, which reads as broken
+	 * rather than as waiting for data.
+	 */
+	function clearDirectoryPickers(): void {
+		fillSelect("#f-user", [], "Load the directory first");
+		fillSelect("#f-add-group", [], "Load the directory first");
+		fillSelect("#f-from-group", [], "Select a user first");
+		fillSelect("#f-to-group", [], "Select a user first");
+	}
+
+	/**
+	 * A readable label for a user.
+	 *
+	 * Every name part is nullable — a directory seeded from an external provider
+	 * often carries only an id — so this falls back through name, then email,
+	 * then the id itself rather than rendering "null null".
+	 */
+	function userLabel(user: User): string {
+		const name = [user.firstName, user.lastName]
+			.filter((part): part is string => part !== null && part.trim() !== "")
+			.join(" ")
+			.trim();
+		const who = name !== "" ? name : user.email ?? user.id;
+		return `${who} · ${user.id}${user.active ? "" : " (inactive)"}`;
+	}
+
+	/** A readable label for a group: its id, plus its member count when known. */
+	function groupLabel(group: Group): string {
+		return group.memberCount === undefined ? group.id : `${group.id} · ${group.memberCount} member(s)`;
+	}
+
+	/** Replace a select's options. Values are uuids; labels are for humans. */
+	function fillSelect(id: string, options: { value: string; label: string }[], placeholder?: string): void {
+		const select = document.querySelector<HTMLSelectElement>(id);
+		if (select === null) {
+			return;
+		}
+		const elements: HTMLOptionElement[] = [];
+		if (placeholder !== undefined) {
+			const empty = document.createElement("option");
+			empty.value = "";
+			empty.textContent = placeholder;
+			elements.push(empty);
+		}
+		for (const option of options) {
+			const element = document.createElement("option");
+			// uuid rather than id: both are accepted by the API, but a uuid can
+			// never be ambiguous with another org's naming.
+			element.value = option.value;
+			element.textContent = option.label;
+			elements.push(element);
+		}
+		select.replaceChildren(...elements);
+	}
+
+	/** The uuid of the currently selected user, or "" when none is chosen. */
+	function selectedUserUuid(): string {
+		return document.querySelector<HTMLSelectElement>("#f-user")?.value ?? "";
+	}
+
+	/** The selected user, from the cached list. */
+	function selectedUser(): User | undefined {
+		const uuid = selectedUserUuid();
+		return users.find((candidate) => candidate.uuid === uuid);
+	}
+
+	/** Fill the user picker and the "add to group" picker from the cached lists. */
+	function populateDirectoryPickers(): void {
+		fillSelect(
+			"#f-user",
+			users.map((user) => ({ value: user.uuid, label: userLabel(user) })),
+			"Select a user…"
+		);
+		fillSelect(
+			"#f-add-group",
+			groups.map((group) => ({ value: group.uuid, label: groupLabel(group) })),
+			"Select a group…"
+		);
+	}
+
+	/**
+	 * Render the selected user's memberships, and rebuild the switch pickers
+	 * from them.
+	 *
+	 * "From" lists only groups the user is actually in, and "To" only groups
+	 * they are not: the switch is then unable to express the two cases that
+	 * cannot work — leaving a group they were never in, and the same-group
+	 * switch that would add then immediately remove them.
+	 */
+	function renderMemberships(): void {
+		const container = document.querySelector<HTMLElement>("#memberships");
+		if (container === null) {
+			return;
+		}
+
+		const user = selectedUser();
+		if (user === undefined) {
+			container.replaceChildren(span("field__hint", "No user selected."));
+			fillSelect("#f-from-group", []);
+			fillSelect("#f-to-group", []);
+			return;
+		}
+
+		if (selectedGroups.length === 0) {
+			container.replaceChildren(span("field__hint", "This user belongs to no groups."));
+		} else {
+			container.replaceChildren(
+				...selectedGroups.map((group) => {
+					const row = document.createElement("div");
+					row.className = "membership";
+					row.append(span("membership__name", group.id));
+
+					const remove = document.createElement("button");
+					remove.className = "secondary small";
+					remove.textContent = "Remove";
+					remove.addEventListener("click", () => {
+						removeFromGroup(user, group);
+					});
+					row.append(remove);
+					return row;
+				})
+			);
+		}
+
+		const memberOf = new Set(selectedGroups.map((group) => group.uuid));
+		fillSelect(
+			"#f-from-group",
+			selectedGroups.map((group) => ({ value: group.uuid, label: group.id })),
+			selectedGroups.length === 0 ? "No groups to leave" : "Select a group…"
+		);
+		fillSelect(
+			"#f-to-group",
+			groups
+				.filter((group) => !memberOf.has(group.uuid))
+				.map((group) => ({ value: group.uuid, label: group.id })),
+			"Select a group…"
+		);
+	}
+
+	/**
+	 * Re-read the selected user's memberships from the server and re-render.
+	 *
+	 * Deliberately a fresh read rather than a local edit of `selectedGroups`:
+	 * after a mutation the server is the only thing that knows what actually
+	 * landed, which matters most when a switch half-applied.
+	 */
+	async function refreshMemberships(api: UserApiClient): Promise<void> {
+		const uuid = selectedUserUuid();
+		if (uuid === "") {
+			selectedGroups = [];
+			renderMemberships();
+			return;
+		}
+		const fresh = await api.getUser(uuid, "uuid");
+		selectedGroups = fresh?.groups ?? [];
+		renderMemberships();
+	}
+
+	/** Remove the user from one group, then re-read their memberships. */
+	function removeFromGroup(user: User, group: Group): void {
+		void runUsers(`mutation removeUserFromGroup · ${group.id}`, async (api) => {
+			await api.removeUserFromGroup(user.uuid, group.uuid);
+			await refreshMemberships(api);
+			return [
+				`Removed ${user.id} from "${group.id}".`,
+				`Now in ${selectedGroups.length} group(s): ${selectedGroups.map((g) => g.id).join(", ") || "none"}`
+			];
+		});
 	}
 
 	// --- the activity transcript --------------------------------------------
@@ -276,16 +508,22 @@ function initializeDOM(): void {
 	 *
 	 * The client is handed to the callback rather than read from the closure, so
 	 * the signed-in check happens in one place and callers get a non-optional
-	 * client to work with.
+	 * client to work with. Generic over which client, so the content and
+	 * user/group calls share one copy of the logging and session-expiry
+	 * handling — see `run` and `runUsers` below.
 	 */
-	async function run(label: string, call: (api: ContentApiClient) => Promise<string[]>): Promise<void> {
-		if (client === undefined) {
+	async function runWith<T>(
+		label: string,
+		api: T | undefined,
+		call: (api: T) => Promise<string[]>
+	): Promise<void> {
+		if (api === undefined) {
 			notice("Sign in first.", "error");
 			return;
 		}
 		const settle = logRequest(label);
 		try {
-			settle("ok", await call(client));
+			settle("ok", await call(api));
 		} catch (err) {
 			settle("error", [err instanceof ContentApiError ? err.message : String(err)]);
 			// No refresh grant exists, so an expired token ends the session.
@@ -294,6 +532,16 @@ function initializeDOM(): void {
 				notice("Session expired. Sign in again to continue.", "error");
 			}
 		}
+	}
+
+	/** Run one content-API call. */
+	async function run(label: string, call: (api: ContentApiClient) => Promise<string[]>): Promise<void> {
+		return runWith(label, client, call);
+	}
+
+	/** Run one user/group-API call. */
+	async function runUsers(label: string, call: (api: UserApiClient) => Promise<string[]>): Promise<void> {
+		return runWith(label, userClient, call);
 	}
 
 	/** Show the URL field for a web app, or the executable path field for a desktop one. */
@@ -424,6 +672,90 @@ function initializeDOM(): void {
 		void run(`mutation deleteContent · ${form.contentId || "?"}`, async (api) => {
 			const removed = await api.removeContent(form.contentId);
 			return removed ? [`Deleted "${form.contentId}".`] : [`The server did not delete "${form.contentId}".`];
+		});
+	});
+
+	document.querySelector("#btnLoadDirectory")?.addEventListener("click", () => {
+		void runUsers("query users + groups", async (api) => {
+			// Two paginated reads, in parallel: neither depends on the other, and
+			// the pickers need both before either is useful.
+			[users, groups] = await Promise.all([api.listUsers(), api.listGroups()]);
+			populateDirectoryPickers();
+			selectedGroups = [];
+			renderMemberships();
+			setDirectoryControlsEnabled(true);
+			return [
+				`Loaded ${users.length} user(s) and ${groups.length} group(s).`,
+				"Pick a user to see the groups they belong to."
+			];
+		});
+	});
+
+	document.querySelector("#f-user")?.addEventListener("change", () => {
+		const user = selectedUser();
+		if (user === undefined) {
+			selectedGroups = [];
+			renderMemberships();
+			return;
+		}
+		void runUsers(`query user · ${user.id}`, async (api) => {
+			await refreshMemberships(api);
+			return [
+				`${userLabel(user)}`,
+				`Belongs to ${selectedGroups.length} group(s): ${selectedGroups.map((g) => g.id).join(", ") || "none"}`
+			];
+		});
+	});
+
+	document.querySelector("#btnAddToGroup")?.addEventListener("click", () => {
+		const user = selectedUser();
+		const groupUuid = document.querySelector<HTMLSelectElement>("#f-add-group")?.value ?? "";
+		if (user === undefined || groupUuid === "") {
+			notice("Select a user and a group first.", "error");
+			return;
+		}
+		const group = groups.find((candidate) => candidate.uuid === groupUuid);
+		void runUsers(`mutation addUserToGroup · ${group?.id ?? groupUuid}`, async (api) => {
+			await api.addUserToGroup(user.uuid, groupUuid);
+			await refreshMemberships(api);
+			return [
+				`Added ${user.id} to "${group?.id ?? groupUuid}".`,
+				`Now in ${selectedGroups.length} group(s): ${selectedGroups.map((g) => g.id).join(", ") || "none"}`
+			];
+		});
+	});
+
+	document.querySelector("#btnSwitchGroup")?.addEventListener("click", () => {
+		const user = selectedUser();
+		const fromUuid = document.querySelector<HTMLSelectElement>("#f-from-group")?.value ?? "";
+		const toUuid = document.querySelector<HTMLSelectElement>("#f-to-group")?.value ?? "";
+		if (user === undefined || fromUuid === "" || toUuid === "") {
+			notice("Select a user, a group to leave, and a group to join.", "error");
+			return;
+		}
+		const from = groups.find((candidate) => candidate.uuid === fromUuid)?.id ?? fromUuid;
+		const to = groups.find((candidate) => candidate.uuid === toUuid)?.id ?? toUuid;
+
+		void runUsers(`mutation addUserToGroup + removeUserFromGroup · ${from} → ${to}`, async (api) => {
+			const result = await api.switchGroup(user.uuid, fromUuid, toUuid);
+			// Re-read before reporting either way: on a half-applied switch the
+			// memberships list is the evidence of what actually landed.
+			await refreshMemberships(api);
+
+			if (result.partialFailure !== undefined) {
+				// Surfaced as a failure, because a half-applied switch is one.
+				// The detail says exactly which step landed, so the operator
+				// knows to retry the remove rather than the whole switch.
+				throw new Error(
+					`Half-applied: ${user.id} was added to "${to}" but NOT removed from "${from}", ` +
+						`so they are now in BOTH groups. Retry the removal. The server said: ${result.partialFailure}`
+				);
+			}
+			return [
+				`Switched ${user.id}: joined "${to}", left "${from}".`,
+				"Two mutations, in that order — the API has no atomic move.",
+				`Now in ${selectedGroups.length} group(s): ${selectedGroups.map((g) => g.id).join(", ") || "none"}`
+			];
 		});
 	});
 

@@ -189,3 +189,68 @@ export interface Fdc3Application {
 export interface AppDirectory {
 	applications: Fdc3Application[];
 }
+
+// ===========================================================================
+// User and group management
+// ===========================================================================
+
+/**
+ * A group a user can belong to.
+ *
+ * Note there is no `name` field on this type: `id` is the human-readable
+ * identifier (`all-users`, `atlassian-users`) and `uuid` is the system id.
+ * Either is accepted wherever the API asks for a group identifier, and the UI
+ * shows `id` because it is what an administrator recognises.
+ */
+export interface Group {
+	uuid: string;
+	id: string;
+	description?: string;
+	/** Total members, present only when the query asked for the count. */
+	memberCount?: number;
+}
+
+/**
+ * A user in the organization.
+ *
+ * `email`, `firstName` and `lastName` are genuinely nullable — directories
+ * seeded from an external provider often carry a bare employee id and nothing
+ * else — so render them defensively rather than assuming a display name.
+ */
+export interface User {
+	uuid: string;
+	id: string;
+	email: string | null;
+	firstName: string | null;
+	lastName: string | null;
+	active: boolean;
+	/**
+	 * The groups this user currently belongs to. Populated by `getUser`, left
+	 * undefined by `listUsers`, which does not fetch them. A user can belong to
+	 * many groups at once — membership is a set, not a single slot.
+	 */
+	groups?: Group[];
+}
+
+/**
+ * What a group switch actually did.
+ *
+ * Switching groups is **two** mutations, because the API has no atomic move
+ * (there is no `moveUserToGroup`/`setUserGroup`). Either step can fail on its
+ * own, so the outcome has to be reported per step rather than as one boolean.
+ * See `UserApiClient.switchGroup` for the ordering and why it was chosen.
+ */
+export interface GroupSwitchResult {
+	/** The user as the server returned them after the last successful step. */
+	user: User;
+	addedTo: string;
+	removedFrom: string;
+	added: boolean;
+	removed: boolean;
+	/**
+	 * Set when the add succeeded but the remove did not, which leaves the user
+	 * in **both** groups. The switch is half-applied and needs the remove
+	 * retried — it is not a failure that undid itself.
+	 */
+	partialFailure?: string;
+}

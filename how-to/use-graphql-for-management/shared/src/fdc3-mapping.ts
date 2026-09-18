@@ -121,6 +121,9 @@ export function contentNodeToFdc3Application(node: ContentNode): Fdc3Application
 			type: "native",
 			details: { path: node.desktopPath, arguments: node.desktopArgs },
 			icons: node.icon === undefined ? undefined : [{ src: node.icon }],
+			// Undefined whenever the deployed schema does not expose `interop` on
+			// the content types — see NODE_FIELDS in content-api.ts. Passed through
+			// so it appears automatically if a schema version starts returning it.
 			interop: node.interop,
 			hostManifests: { here: { ...here, withSnap: node.withSnap ?? false } }
 		};
@@ -136,7 +139,10 @@ export function contentNodeToFdc3Application(node: ContentNode): Fdc3Application
 		// UI's "Validate" already makes when it loads a node back into the form.
 		details: { url: node.url ?? node.urls?.[0] },
 		icons: node.icon === undefined ? undefined : [{ src: node.icon }],
-		// Intent declarations round-trip as-is, so an exported manifest keeps them.
+		// Intent declarations are write-only in the deployed schema, so this is
+		// undefined on export rather than round-tripping — see NODE_FIELDS in
+		// content-api.ts. Passed through so it appears automatically if a schema
+		// version starts returning it.
 		interop: node.interop,
 		hostManifests: {
 			here: {

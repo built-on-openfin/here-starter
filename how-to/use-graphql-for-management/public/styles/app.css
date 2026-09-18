@@ -1,39 +1,68 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter&display=swap');
+/* Inter is here.io's body typeface. The weights are requested explicitly:
+   without them only 400 loads and the browser synthesises every 600/700 in
+   this page, which is what made the old headings look smeared.
+   (here.io pairs Inter with powerGrotesk for display type, which is not
+   publicly distributed, so headings below use tightly tracked Inter instead.) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* Palette fallbacks are taken from here.io's own design tokens, so a sample
+   served standalone looks like the product it demonstrates. Every value stays
+   behind `var(--theme-*, …)`: inside HERE Enterprise Browser the container
+   injects those variables and wins, and only the fallback applies on
+   localhost. Do not inline a literal colour anywhere below — it would ignore
+   the host theme.
+
+   From here.io: blue #0091eb, green #00ad76, ink #2b2b2b / #595959, and a warm
+   neutral ramp (#fbf7f4, #f4f2ec, #e5e1dc) rather than the cool greys this
+   sample used before. */
 :root {
-	--brand-background: var(--theme-background-primary, #1e1f23);
-	--brand-border: var(--theme-background4, #2f3136);
-	--brand-primary: var(--theme-brand-primary, #0a76d3);
+	--brand-background: var(--theme-background-primary, #17181c);
+	--brand-border: var(--theme-background4, #2a2c33);
+	--brand-primary: var(--theme-brand-primary, #0091eb);
 	--brand-text: var(--theme-text-default, #ffffff);
-	--brand-text-secondary: var(--theme-text-help, #c9cbd2);
-	--brand-input-background: var(--theme-background5, #383a40);
-	--brand-input-border: var(--theme-background6, #53565f);
-	--brand-input-border-highlight: var(--theme-input-focused, #c9cbd2);
-	--brand-table-header: var(--theme-background1, #111214);
+	--brand-text-secondary: var(--theme-text-help, #a7abb5);
+	--brand-input-background: var(--theme-background5, #22242a);
+	--brand-input-border: var(--theme-background6, #343740);
+	--brand-input-border-highlight: var(--theme-input-focused, #0091eb);
+	--brand-table-header: var(--theme-background1, #1c1e23);
 	--brand-table-header-text: var(--theme-text-default, #ffffff);
-	--brand-table-row-even: var(--theme-background3, #24262b);
-	--brand-table-row-odd: var(--theme-background4, #2f3136);
-	--brand-error: var(--theme-status-critical, #be1d1f);
-	--brand-success: var(--theme-status-success, #35c759);
+	--brand-table-row-even: var(--theme-background3, #22242a);
+	--brand-table-row-odd: var(--theme-background4, #2a2c33);
+	--brand-error: var(--theme-status-critical, #ff6b6b);
+	--brand-success: var(--theme-status-success, #00ad76);
+
+	/* One elevation, used sparingly. The old styling put a hard drop shadow on
+	   every input, which is the single most dated thing about this page. */
+	--brand-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+	--brand-radius: 10px;
+	--brand-radius-sm: 8px;
 
 	accent-color: var(--brand-primary);
+	color-scheme: dark;
 }
 
 .theme-light {
-	--brand-background: var(--theme-background-primary, #fafbfe);
-	--brand-border: var(--theme-background4, #eceef1);
-	--brand-primary: var(--theme-brand-primary, #0a76d3);
-	--brand-text: var(--theme-text-default, #111214);
-	--brand-text-secondary: var(--theme-text-help, #2f3136);
-	--brand-input-background: var(--theme-background5, #dddfe4);
-	--brand-input-border: var(--theme-background6, #c9cbd2);
-	--brand-input-border-highlight: var(--theme-input-focused, #c9cbd2);
+	--brand-background: var(--theme-background-primary, #fbf7f4);
+	--brand-border: var(--theme-background4, #e5e1dc);
+	--brand-primary: var(--theme-brand-primary, #0091eb);
+	--brand-text: var(--theme-text-default, #2b2b2b);
+	--brand-text-secondary: var(--theme-text-help, #595959);
+	/* Three warm steps, so the hierarchy reads without heavy borders: the page
+	   is #fbf7f4, a panel sits on it in white, and an input is recessed back
+	   into the warm tint. */
+	--brand-input-background: var(--theme-background5, #f4f2ec);
+	--brand-input-border: var(--theme-background6, #e5e1dc);
+	--brand-input-border-highlight: var(--theme-input-focused, #0091eb);
 	--brand-table-header: var(--theme-background1, #ffffff);
-	--brand-table-header-text: var(--theme-text-default, #111214);
-	--brand-table-row-even: var(--theme-background3, #eceef1);
-	--brand-table-row-odd: var(--theme-background4, #c9cbd2);
-	--brand-error: var(--theme-status-critical, #be1d1f);
-	--brand-success: var(--theme-status-success, #35c759);
+	--brand-table-header-text: var(--theme-text-default, #2b2b2b);
+	--brand-table-row-even: var(--theme-background3, #f4f2ec);
+	--brand-table-row-odd: var(--theme-background4, #e5e1dc);
+	--brand-error: var(--theme-status-critical, #c2352f);
+	--brand-success: var(--theme-status-success, #00ad76);
+
+	--brand-shadow: 0 1px 2px rgb(43 43 43 / 8%);
+
+	color-scheme: light;
 }
 
 .primary {
@@ -93,9 +122,11 @@ body.small {
 }
 
 h1 {
-	font-size: 24px;
+	font-size: 26px;
 	font-weight: 700;
-	line-height: 1;
+	line-height: 1.1;
+	/* Negative tracking at display sizes, the way here.io sets its headings. */
+	letter-spacing: -0.02em;
 	margin-block-start: 0;
 	margin-block-end: 0;
 }
@@ -185,18 +216,18 @@ input[type='button'],
 a.button,
 footer a {
 	background-color: var(--brand-primary);
-	border: 2px solid var(--brand-primary);
+	border: 1px solid var(--brand-primary);
 	color: #ffffff;
-	border-radius: 5px;
-	padding: 8px 20px;
+	border-radius: var(--brand-radius-sm);
+	padding: 10px 22px;
 	text-align: left;
 	cursor: pointer;
-	font-size: 12px;
-	font-weight: bold;
+	font-size: 13px;
+	font-weight: 600;
 	text-decoration: none;
 	outline: 0;
 	white-space: nowrap;
-	transition-property: background-color, color, opacity;
+	transition-property: background-color, border-color, color, opacity;
 	transition-duration: 200ms;
 	transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -284,8 +315,8 @@ pre {
 }
 
 header {
-	padding-bottom: 10px;
-	border-bottom: 2px solid var(--brand-border);
+	padding-bottom: 18px;
+	border-bottom: 1px solid var(--brand-border);
 }
 
 footer {
@@ -328,19 +359,25 @@ input[type='month'],
 input[type='week'],
 input[type='color'],
 textarea {
-	border-radius: 5px;
+	border-radius: var(--brand-radius-sm);
 	border: 1px solid var(--brand-input-border);
 	background-color: var(--brand-input-background);
-	font-size: 12px;
+	font-size: 13px;
 	outline: 0;
 	color: var(--brand-text);
 	width: 50%;
 	min-width: 200px;
-	padding: 8px 12px;
-	box-shadow: rgb(0 0 0 / 25%) 0px 4px 4px;
-	transition-property: background-color, color, opacity;
+	padding: 9px 12px;
+	transition-property: background-color, border-color, color, opacity;
 	transition-duration: 200ms;
 	transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Keyboard focus needs to be visible even though the controls above set
+   `outline: 0` for mouse use. */
+:focus-visible {
+	outline: 2px solid var(--brand-primary);
+	outline-offset: 2px;
 }
 
 textarea {
@@ -501,7 +538,6 @@ input[type='range']::-webkit-slider-runnable-track {
 	border: 1px solid var(--brand-input-border);
 	background-color: var(--brand-input-background);
 	border-radius: 5px;
-	box-shadow: rgb(0 0 0 / 25%) 0px 4px 4px;
 	transition-property: background-color, color, opacity;
 	transition-duration: 200ms;
 	transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -516,7 +552,6 @@ input[type='range']::-webkit-slider-thumb {
 	border: 1px solid var(--brand-input-border);
 	background: var(--brand-input-background);
 	cursor: pointer;
-	box-shadow: rgb(0 0 0 / 25%) 0px 4px 4px;
 	transition-property: background-color, color, opacity;
 	transition-duration: 200ms;
 	transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -535,10 +570,20 @@ input:disabled,
 textarea:disabled,
 footer a:disabled,
 a[disabled] {
-	opacity: 0.3;
+	opacity: 0.55;
 	cursor: default;
 	pointer-events: none;
 	resize: none;
+}
+
+/* A disabled primary button used to be white text on 30%-opacity brand blue,
+   which was unreadable — it looked broken rather than unavailable. Neutral
+   fill and secondary text say "not yet" legibly. */
+button:disabled {
+	background-color: var(--brand-input-background);
+	border-color: var(--brand-border);
+	color: var(--brand-text-secondary);
+	opacity: 1;
 }
 
 select:invalid,
@@ -580,7 +625,6 @@ input[type='radio'] {
 	width: 20px;
 	height: 20px;
 	margin: 2px;
-	box-shadow: rgb(0 0 0 / 25%) 0px 4px 4px;
 	transition-property: background-color, color, opacity;
 	transition-duration: 200ms;
 	transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
@@ -951,18 +995,18 @@ td,
    ───────────────────────────────────────────────────────────────────────── */
 
 .subtitle {
-	max-width: 60ch;
-	margin-top: 6px;
-	font-size: 12px;
-	line-height: 1.5;
+	max-width: 62ch;
+	margin-top: 8px;
+	font-size: 13px;
+	line-height: 1.55;
 	color: var(--brand-text-secondary);
 }
 
 .endpoint {
 	display: inline-flex;
 	align-items: center;
-	padding: 5px 12px;
-	border: 1px solid var(--brand-input-border);
+	padding: 6px 14px;
+	border: 1px solid var(--brand-border);
 	border-radius: 999px;
 	background-color: var(--brand-input-background);
 	font-family: 'Courier New', Courier, monospace;
@@ -977,7 +1021,10 @@ td,
 
 .console {
 	display: grid;
-	grid-template-columns: minmax(340px, 400px) 1fr;
+	/* The left column holds two dense forms, so it gets real room. `minmax(0,
+	   1fr)` on the right stops long log lines from forcing the grid wider than
+	   the viewport. */
+	grid-template-columns: minmax(360px, 460px) minmax(0, 1fr);
 	gap: 20px;
 	flex: 1;
 	min-height: 0;
@@ -987,9 +1034,11 @@ td,
 	display: flex;
 	flex-direction: column;
 	min-height: 0;
-	border: 1px solid var(--brand-input-border);
-	border-radius: 8px;
+	/* Softer than the input border: a panel edge should separate, not outline. */
+	border: 1px solid var(--brand-border);
+	border-radius: var(--brand-radius);
 	background-color: var(--brand-table-header);
+	box-shadow: var(--brand-shadow);
 	overflow: hidden;
 }
 
@@ -998,15 +1047,59 @@ td,
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
-	padding: 8px 16px;
-	border-bottom: 1px solid var(--brand-input-border);
+	padding: 14px 20px;
+	border-bottom: 1px solid var(--brand-border);
+}
+
+/* A collapsible panel is a <details>. Block rather than flex: `display: flex`
+   on <details> has a history of breaking the disclosure in some engines, and
+   the panels size to their content here anyway. */
+details.panel {
+	display: block;
+}
+
+/* `.panel__head` on a <summary> is the click target. The default triangle is
+   replaced by `.panel__chevron`, which can follow the theme. */
+summary.panel__head {
+	cursor: pointer;
+	user-select: none;
+	list-style: none;
+}
+
+summary.panel__head::-webkit-details-marker {
+	display: none;
+}
+
+summary.panel__head:hover {
+	background-color: var(--brand-input-background);
+}
+
+/* A collapsed panel has no body under it, so its head should not draw a
+   divider into empty space. */
+details.panel:not([open]) > summary.panel__head {
+	border-bottom-color: transparent;
+}
+
+.panel__chevron {
+	width: 7px;
+	height: 7px;
+	flex: none;
+	margin-right: 2px;
+	border-right: 2px solid var(--brand-text-secondary);
+	border-bottom: 2px solid var(--brand-text-secondary);
+	/* Points down when collapsed, up when open. */
+	transform: rotate(45deg);
+	transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+details.panel[open] > summary.panel__head .panel__chevron {
+	transform: rotate(-135deg);
 }
 
 .panel__title {
 	font-size: 13px;
-	font-weight: 700;
-	letter-spacing: 0.02em;
-	padding: 10px;
+	font-weight: 600;
+	letter-spacing: 0.01em;
 }
 
 .panel__hint {
@@ -1016,14 +1109,14 @@ td,
 
 .panel__body {
 	min-height: 0;
-	padding: 18px 16px;
+	padding: 20px;
 	overflow-y: auto;
 }
 
 .editor {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: 18px;
 }
 
 .field {
@@ -1098,10 +1191,75 @@ td,
 	color: var(--brand-text-secondary);
 }
 
+/* The left column of the console, holding the app and user-management panels.
+   Keeps `.console` at two grid children so the Activity panel still spans the
+   full height beside them, and scrolls as one unit when both panels are tall. */
+.stack {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+/* Panels in the stack size to their content and the column scrolls past them.
+   Without this they are flex items in a height-constrained column, so they
+   shrink and clip their own forms — and because `.panel__body` scrolls, each
+   one grows a second scrollbar inside the first. */
+.stack > .panel {
+	flex: 0 0 auto;
+}
+
+.stack > .panel > .panel__body {
+	overflow: visible;
+}
+
+.memberships {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.membership {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 8px 12px;
+	border: 1px solid var(--brand-border);
+	border-radius: var(--brand-radius-sm);
+	background-color: var(--brand-input-background);
+}
+
+.membership__name {
+	font-family: 'Courier New', Courier, monospace;
+	font-size: 11px;
+	color: var(--brand-text);
+	word-break: break-all;
+}
+
+.membership button {
+	padding: 4px 10px;
+	font-size: 10px;
+}
+
+/* A caveat that has to be read, not skimmed — hence the error-coloured rule
+   rather than the muted styling of `.field__hint`. */
+.warn-note {
+	padding-left: 10px;
+	border-left: 3px solid var(--brand-error);
+	font-size: 11px;
+	line-height: 1.5;
+	color: var(--brand-text-secondary);
+}
+
 .log {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
+	/* Caps line length on a wide monitor: log detail is prose and paths, and
+	   neither is readable stretched across 1500px. */
+	max-width: 120ch;
 }
 
 .log__empty {
@@ -1114,10 +1272,10 @@ td,
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
-	padding: 11px 13px;
-	border: 1px solid var(--brand-input-border);
+	padding: 13px 15px;
+	border: 1px solid var(--brand-border);
 	border-left-width: 3px;
-	border-radius: 6px;
+	border-radius: var(--brand-radius-sm);
 	background-color: var(--brand-input-background);
 }
 .log-entry.is-ok {
@@ -1217,13 +1375,15 @@ td,
 	display: none;
 }
 
+/* Derived from the success token rather than a literal green, so it follows the
+   host theme like everything else and matches here.io's #00ad76. */
 .auth-pill {
-	background-color: rgba(46, 160, 67, 0.15);
+	background-color: color-mix(in srgb, var(--brand-success) 14%, transparent);
 	border-radius: 999px;
-	color: #2ea043;
+	color: var(--brand-success);
 	font-size: 12px;
 	font-weight: 600;
-	padding: 3px 10px;
+	padding: 4px 11px;
 }
 
 /* Same scoped-override pattern: a bare .hidden loses to the button rules. */
