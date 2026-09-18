@@ -1,4 +1,4 @@
-# Content Configuration API How-To
+# Using the GraphQL API for User and App Management How-To
 
 Your HERE application directory — the apps your users see, and the settings that decide how each one
 behaves — is normally maintained by hand in the Admin Console. The **Content Configuration API**
