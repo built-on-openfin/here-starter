@@ -38,6 +38,7 @@ That turns directory administration into something you can automate:
 
 ## Prerequisites
 
+- Here Browser on version 15+
 - Node.js 20.12+ (for the built-in `.env` support)
 - An account with **admin write access** to content in your HERE org
 - For the browser UI: an **OAuth app** registered in your org (see below), or an API JWT to paste
