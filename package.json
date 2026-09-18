@@ -1,6 +1,6 @@
 {
   "name": "here-starter",
-  "version": "11.1.0",
+  "version": "14.0.0",
   "description": "Here Starter",
   "scripts": {
     "build": "node ./scripts/workspaces.mjs build",
@@ -38,6 +38,5 @@
     "replace-in-file": "7.1.0",
     "yargs": "17.7.2"
   },
-  "overrides": {
-  }
+  "overrides": {}
 }
