@@ -1,5 +1,9 @@
 # Changelog
 
+## September 2026
+
+- [use-oauth-client-credentials](./how-to/use-oauth-client-credentials) - New example for HERE 15 showing the OAuth 2.0 client credentials grant: registering a confidential app with a service account user, obtaining a token, and pulling Audit API records on a schedule.
+
 ## October 2025
 
 - [create-a-search-agent](./how-to/create-a-search-agent) - Updated the openlibrary
