@@ -24,6 +24,7 @@
   "packageExclude": [
     "how-to/use-notifications-service",
     "how-to/use-the-entitlements-api",
+    "how-to/use-oauth-client-credentials",
     "how-to/use-content-config-api"
   ],
   "packageCustomFolder": "",
