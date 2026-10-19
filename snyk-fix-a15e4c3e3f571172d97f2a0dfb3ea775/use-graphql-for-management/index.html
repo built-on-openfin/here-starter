@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1" />
+		<title>Using GraphQL for Content and User Management</title>
+		<link rel="icon" type="image/x-icon" href="./favicon.ico" />
+		<link rel="stylesheet" href="./styles/app.css" />
+		<script src="./js/app.bundle.js"></script>
+	</head>
+
+	<!-- `theme-light` picks the light palette for the fallback colours, matching
+	     here.io. It has no effect inside HERE Enterprise Browser, where the
+	     container's own `--theme-*` variables win either way. Delete the class
+	     to preview the dark palette standalone. -->
+	<body class="theme-light col gap20">
+		<!-- `wrap` so the longer title and the auth controls stack instead of
+		     crushing each other on a narrow window. -->
+		<header class="row spread middle wrap gap20">
+			<div class="col">
+				<h1>Using GraphQL for Content and User Management</h1>
+				<div class="subtitle">
+					One endpoint, one credential: create, read, update and delete apps, and move users between groups
+				</div>
+			</div>
+			<div class="row middle wrap gap10">
+				<span class="endpoint">
+					POST&nbsp;
+					<b id="endpoint">/here/api/graphql</b>
+				</span>
+				<span id="signInControls" class="row middle gap10">
+					<button id="btnSignIn">Sign in</button>
+					<span class="auth-or">or</span>
+					<input
+						id="f-jwt"
+						type="password"
+						class="jwt-input"
+						placeholder="Paste API JWT"
+						autocomplete="off"
+						spellcheck="false"
+					/>
+					<input
+						id="f-auth-id"
+						type="text"
+						class="auth-id-input"
+						placeholder="Auth ID (if needed)"
+						autocomplete="off"
+						spellcheck="false"
+					/>
+					<button id="btnSignInJwt" class="secondary">Use JWT</button>
+				</span>
+				<span id="authState" class="auth-state hidden">
+					<span class="auth-pill">Signed in</span>
+					<button id="btnSignOut" class="plain small">Sign out</button>
+				</span>
+				<img src="./images/icon.png" alt="HERE" height="36" />
+			</div>
+		</header>
+
+		<main class="console">
+			<div class="stack">
+				<!-- Collapsible through the native details/summary elements, so keyboard
+				     and screen-reader support come for free with no JS. Both start open:
+				     collapsing is there to let you park the half you are not using, not
+				     to hide anything on a first visit. Open/closed state is not
+				     persisted — a reload signs you out anyway. -->
+				<details class="panel" open>
+					<summary class="panel__head">
+						<span class="panel__title">App Management</span>
+						<span class="panel__chevron" aria-hidden="true"></span>
+					</summary>
+					<div class="panel__body">
+						<div class="editor">
+							<div class="field">
+								<label for="f-contentId">Content ID</label>
+								<input id="f-contentId" type="text" value="here-io" autocomplete="off" spellcheck="false" />
+								<span class="field__hint">Unique in your org — letters, numbers, hyphens</span>
+							</div>
+							<div class="field">
+								<label for="f-name">Name</label>
+								<input id="f-name" type="text" value="HERE" autocomplete="off" />
+							</div>
+							<div class="field">
+								<label for="f-type">Type</label>
+								<select id="f-type">
+									<option value="web">Web</option>
+									<option value="native">Desktop</option>
+								</select>
+							</div>
+							<div class="field" id="field-url">
+								<label for="f-url">URL</label>
+								<input
+									id="f-url"
+									type="url"
+									value="https://www.here.io/"
+									autocomplete="off"
+									spellcheck="false"
+								/>
+							</div>
+							<div class="field hidden" id="field-path">
+								<label for="f-path">Executable path</label>
+								<input
+									id="f-path"
+									type="text"
+									value="C:\Program Files\App\app.exe"
+									autocomplete="off"
+									spellcheck="false"
+								/>
+							</div>
+							<div class="field">
+								<label for="f-icon">Icon URL</label>
+								<input
+									id="f-icon"
+									type="url"
+									value="https://www.here.io/favicon.ico"
+									autocomplete="off"
+									spellcheck="false"
+								/>
+								<span class="field__hint">Optional</span>
+							</div>
+							<div class="checks">
+								<div class="check">
+									<input id="f-active" type="checkbox" checked />
+									<label for="f-active">Active</label>
+								</div>
+								<div class="check">
+									<input id="f-featured" type="checkbox" />
+									<label for="f-featured">Featured</label>
+								</div>
+							</div>
+
+							<div class="actions">
+								<button id="btnCreate" disabled>Create</button>
+								<button id="btnValidate" class="secondary" disabled>Validate</button>
+								<button id="btnUpdate" class="secondary" disabled>Update</button>
+								<button id="btnDelete" class="secondary" disabled>Delete</button>
+							</div>
+
+							<hr class="divider" />
+
+							<div class="col gap10">
+								<span class="actions-label">App directory</span>
+								<div class="actions">
+									<button id="btnList" disabled>List all apps</button>
+									<button id="btnExport" class="secondary" disabled>Export as JSON</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</details>
+
+				<details class="panel" open>
+					<summary class="panel__head">
+						<span class="panel__title">User Management</span>
+						<span class="panel__chevron" aria-hidden="true"></span>
+					</summary>
+					<div class="panel__body">
+						<div class="editor">
+							<div class="actions">
+								<button id="btnLoadDirectory" class="span-2" disabled>Load users &amp; groups</button>
+							</div>
+
+							<div class="field">
+								<label for="f-user">User</label>
+								<!-- Placeholder options so the pickers read as "waiting for data"
+								     rather than as empty boxes before the directory is loaded. The
+								     script replaces them; see clearDirectoryPickers. -->
+								<select id="f-user" disabled>
+									<option value="">Load the directory first</option>
+								</select>
+								<span class="field__hint" id="userHint">
+									Load the directory to pick a user. Group membership is a set — a user can be in several
+									groups at once.
+								</span>
+							</div>
+
+							<div class="col gap10">
+								<span class="actions-label">Current groups</span>
+								<div id="memberships" class="memberships">
+									<span class="field__hint">No user selected.</span>
+								</div>
+							</div>
+
+							<hr class="divider" />
+
+							<div class="field">
+								<label for="f-add-group">Add to group</label>
+								<select id="f-add-group" disabled>
+									<option value="">Load the directory first</option>
+								</select>
+							</div>
+							<div class="actions">
+								<button id="btnAddToGroup" class="secondary span-2" disabled>Add to group</button>
+							</div>
+
+							<hr class="divider" />
+
+							<div class="col gap10">
+								<span class="actions-label">Switch group</span>
+								<div class="field">
+									<label for="f-from-group">From</label>
+									<select id="f-from-group" disabled>
+										<option value="">Select a user first</option>
+									</select>
+								</div>
+								<div class="field">
+									<label for="f-to-group">To</label>
+									<select id="f-to-group" disabled>
+										<option value="">Select a user first</option>
+									</select>
+								</div>
+								<div class="actions">
+									<button id="btnSwitchGroup" class="span-2" disabled>Switch group</button>
+								</div>
+								<p class="warn-note">
+									The API has no atomic move: there is no moveUserToGroup and no setUserGroup. A switch runs
+									addUserToGroup and then removeUserFromGroup, so a failure part-way leaves the user in both
+									groups. The add runs first deliberately — over-permissioned for a moment beats locked out of
+									both.
+								</p>
+							</div>
+						</div>
+					</div>
+				</details>
+			</div>
+
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__title">Activity</span>
+					<button id="btnClear" class="plain small">Clear</button>
+				</div>
+				<div class="panel__body">
+					<div id="log" class="log">
+						<div class="log__empty" id="logEmpty">Requests and their responses appear here.</div>
+					</div>
+				</div>
+			</section>
+		</main>
+	</body>
+</html>
