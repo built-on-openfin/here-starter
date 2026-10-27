@@ -98,6 +98,106 @@ public class App {
       "  ]\n" +
       "}";
 
+  // Replace REPLACE_WITH_APP_ID (and optionally context) before using newNotificationOpenApp.
+  private static final String OPEN_APP_ID_PLACEHOLDER = "REPLACE_WITH_APP_ID";
+
+  private static final String RAISE_INTENT_NOTIFICATION_JSON = "{\n" +
+      "  \"template\": \"custom\",\n" +
+      "  \"title\": \"View MSFT Chart\",\n" +
+      "  \"toast\": \"transient\",\n" +
+      "  \"templateData\": {\n" +
+      "    \"textData\": \"Raise a ViewChart intent for MSFT in cloud-interop-test-app\"\n" +
+      "  },\n" +
+      "  \"templateOptions\": {\n" +
+      "    \"body\": {\n" +
+      "      \"fallbackText\": \"View MSFT chart\",\n" +
+      "      \"compositions\": [\n" +
+      "        {\n" +
+      "          \"minTemplateAPIVersion\": \"1\",\n" +
+      "          \"layout\": {\n" +
+      "            \"type\": \"container\",\n" +
+      "            \"children\": [\n" +
+      "              {\n" +
+      "                \"optional\": true,\n" +
+      "                \"type\": \"text\",\n" +
+      "                \"dataKey\": \"textData\"\n" +
+      "              }\n" +
+      "            ]\n" +
+      "          }\n" +
+      "        }\n" +
+      "      ]\n" +
+      "    },\n" +
+      "    \"indicator\": {\n" +
+      "      \"color\": \"purple\"\n" +
+      "    }\n" +
+      "  },\n" +
+      "  \"buttons\": [\n" +
+      "    {\n" +
+      "      \"title\": \"View Chart\",\n" +
+      "      \"cta\": true,\n" +
+      "      \"type\": \"button\",\n" +
+      "      \"onClick\": {\n" +
+      "        \"task\": \"fdc3.raiseIntent\",\n" +
+      "        \"intent\": \"ViewChart\",\n" +
+      "        \"context\": {\n" +
+      "          \"type\": \"fdc3.instrument\",\n" +
+      "          \"name\": \"MSFT\",\n" +
+      "          \"id\": {\n" +
+      "            \"ticker\": \"MSFT\"\n" +
+      "          }\n" +
+      "        },\n" +
+      "        \"app\": \"cloud-interop-test-app\"\n" +
+      "      }\n" +
+      "    }\n" +
+      "  ]\n" +
+      "}";
+
+  private static final String OPEN_APP_NOTIFICATION_JSON = "{\n" +
+      "  \"template\": \"custom\",\n" +
+      "  \"title\": \"Open FDC3 App\",\n" +
+      "  \"toast\": \"transient\",\n" +
+      "  \"templateData\": {\n" +
+      "    \"textData\": \"Open an app via fdc3.open. Replace REPLACE_WITH_APP_ID in App.java.\"\n" +
+      "  },\n" +
+      "  \"templateOptions\": {\n" +
+      "    \"body\": {\n" +
+      "      \"fallbackText\": \"Open FDC3 app\",\n" +
+      "      \"compositions\": [\n" +
+      "        {\n" +
+      "          \"minTemplateAPIVersion\": \"1\",\n" +
+      "          \"layout\": {\n" +
+      "            \"type\": \"container\",\n" +
+      "            \"children\": [\n" +
+      "              {\n" +
+      "                \"optional\": true,\n" +
+      "                \"type\": \"text\",\n" +
+      "                \"dataKey\": \"textData\"\n" +
+      "              }\n" +
+      "            ]\n" +
+      "          }\n" +
+      "        }\n" +
+      "      ]\n" +
+      "    },\n" +
+      "    \"indicator\": {\n" +
+      "      \"color\": \"purple\"\n" +
+      "    }\n" +
+      "  },\n" +
+      "  \"buttons\": [\n" +
+      "    {\n" +
+      "      \"title\": \"Open App\",\n" +
+      "      \"cta\": true,\n" +
+      "      \"type\": \"button\",\n" +
+      "      \"onClick\": {\n" +
+      "        \"task\": \"fdc3.open\",\n" +
+      "        \"app\": \"" + OPEN_APP_ID_PLACEHOLDER + "\",\n" +
+      "        \"context\": {\n" +
+      "          \"type\": \"fdc3.nothing\"\n" +
+      "        }\n" +
+      "      }\n" +
+      "    }\n" +
+      "  ]\n" +
+      "}";
+
   public static void main(String[] args) {
     // retrieve environment variables using dotenv
     Dotenv dotenv = Dotenv.load();
@@ -221,20 +321,13 @@ public class App {
     String[] actionArray = action.split("=");
     if (actionArray[0].equals("newNotification")) {
       displayNotification(api);
-      
-      // Keep listening for events after creating notification
-      System.out.println("Notification created. Continuing to listen for events...");
-      System.out.println("Press Ctrl+C to exit and disconnect from the service.");
-      
-      // Keep the main thread alive to continue listening for events
-      try {
-        while (shouldContinue) {
-          Thread.sleep(1000); // Sleep for 1 second to avoid busy waiting
-        }
-      } catch (InterruptedException e) {
-        System.out.println("Main thread interrupted");
-      }
-      
+      listenForEventsUntilShutdown();
+    } else if (actionArray[0].equals("newNotificationRaiseIntent")) {
+      displayRaiseIntentNotification(api);
+      listenForEventsUntilShutdown();
+    } else if (actionArray[0].equals("newNotificationOpenApp")) {
+      displayOpenAppNotification(api);
+      listenForEventsUntilShutdown();
     } else if (actionArray[0].equals("updateNotification")) {
       if (actionArray.length != 2) {
         System.out.println("Usage: updateNotification=<notificationId>");
@@ -304,13 +397,32 @@ public class App {
     } else {
       System.out.println("Unknown action: " + action);
       System.out.println(
-          "Available actions: newNotification, updateNotification=<notificationId>, deleteNotification=<notificationId>, bulkDeleteNotification=<notificationId1,notificationId2,...>, setReminder=<notificationId>, cancelReminder=<notificationId>");
+          "Available actions: newNotification, newNotificationRaiseIntent, newNotificationOpenApp, updateNotification=<notificationId>, deleteNotification=<notificationId>, bulkDeleteNotification=<notificationId1,notificationId2,...>, setReminder=<notificationId>, cancelReminder=<notificationId>");
       System.exit(1);
     }
 
-    // Only exit here if the action is not newNotification (which keeps running)
-    if (!actionArray[0].equals("newNotification")) {
+    // Only exit here if the action is not a create-and-listen action
+    if (!isCreateAndListenAction(actionArray[0])) {
       System.exit(0);
+    }
+  }
+
+  private static boolean isCreateAndListenAction(String actionName) {
+    return actionName.equals("newNotification")
+        || actionName.equals("newNotificationRaiseIntent")
+        || actionName.equals("newNotificationOpenApp");
+  }
+
+  private static void listenForEventsUntilShutdown() {
+    System.out.println("Notification created. Continuing to listen for events...");
+    System.out.println("Press Ctrl+C to exit and disconnect from the service.");
+
+    try {
+      while (shouldContinue) {
+        Thread.sleep(1000); // Sleep for 1 second to avoid busy waiting
+      }
+    } catch (InterruptedException e) {
+      System.out.println("Main thread interrupted");
     }
   }
 
@@ -321,6 +433,29 @@ public class App {
     try {
       ObjectMapper objectMapper = new ObjectMapper();
       Object payload = objectMapper.readValue(updateJson, Object.class);
+
+      String lastNotificationId = api.raiseNotification(
+          new NotificationOptions("correlation-id-1234",
+              new NotificationTargets(new String[] { "all-users" }, new String[] {})),
+          payload);
+      System.out.println("New Notification raised with id: " + lastNotificationId);
+    } catch (Exception e) {
+      System.err.println("Error raising notification " + e.getCause());
+    }
+  }
+
+  private static void displayRaiseIntentNotification(CloudNotificationAPI api) {
+    raiseNotificationFromJson(api, RAISE_INTENT_NOTIFICATION_JSON);
+  }
+
+  private static void displayOpenAppNotification(CloudNotificationAPI api) {
+    raiseNotificationFromJson(api, OPEN_APP_NOTIFICATION_JSON);
+  }
+
+  private static void raiseNotificationFromJson(CloudNotificationAPI api, String payloadJson) {
+    try {
+      ObjectMapper objectMapper = new ObjectMapper();
+      Object payload = objectMapper.readValue(payloadJson, Object.class);
 
       String lastNotificationId = api.raiseNotification(
           new NotificationOptions("correlation-id-1234",

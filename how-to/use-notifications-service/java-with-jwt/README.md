@@ -55,6 +55,8 @@ mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="[action]"
 
 **Available Actions:**
 - `newNotification` - Create a new notification (default)
+- `newNotificationRaiseIntent` - Create a notification whose button raises an FDC3 `ViewChart` intent for MSFT
+- `newNotificationOpenApp` - Create a notification whose button opens an FDC3 app (replace `REPLACE_WITH_APP_ID` in `App.java` first)
 - `updateNotification={notification id}` - Update an existing notification
 - `deleteNotification={notification id}` - Delete a notification
 - `bulkDeleteNotification={notification id1,notification id2,...}` - Delete multiple notifications (comma-separated IDs)
@@ -68,6 +70,13 @@ mvn exec:java -Dexec.mainClass="here.com.example.App"
 
 # Create a new notification (explicit)
 mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="newNotification"
+
+# Create a notification that raises fdc3.raiseIntent("ViewChart", MSFT instrument, "cloud-interop-test-app")
+mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="newNotificationRaiseIntent"
+
+# Create a notification that opens an app via fdc3.open
+# Edit REPLACE_WITH_APP_ID (and optional context) in App.java before running
+mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="newNotificationOpenApp"
 
 # Update a notification
 mvn exec:java -Dexec.mainClass="here.com.example.App" -Dexec.args="updateNotification={notification id}"
