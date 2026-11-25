@@ -3,6 +3,7 @@
 ## September 2026
 
 - [use-oauth-client-credentials](./how-to/use-oauth-client-credentials) - New example for HERE 15 showing the OAuth 2.0 client credentials grant: registering a confidential app with a service account user, obtaining a token, and pulling Audit API records on a schedule.
+- [use-oauth-client-credentials/app-directory](./how-to/use-oauth-client-credentials/app-directory) - A second client-credentials script that reconciles an FDC3 app directory with HERE. The audit collector and this script now live side by side, each with its own service account.
 
 ## October 2025
 
